@@ -13,7 +13,8 @@ export interface UserProfile {
 export interface Gym {
   id: number;
   gym_name: string;
-  location_address: string;
+  location_address: string | null;
+  created_at: string;
 }
 
 export type RouteGrade =
@@ -42,6 +43,7 @@ export interface Send {
   user_id: string;
   route_id: number;
   date_completed: string;
+  created_at: string;
   route?: Route;
   profile?: UserProfile;
 }
