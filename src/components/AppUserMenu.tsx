@@ -1,4 +1,4 @@
-import { LogOut, User, UserCircle } from 'lucide-react';
+import { LogOut, Settings, UserCircle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/auth';
@@ -39,12 +39,12 @@ export function AppUserMenu() {
       {open && (
         <div className="absolute right-0 mt-2 w-44 rounded-lg border border-surface-600 bg-surface-800 py-1 shadow-lg z-10">
           <Link
-            to="/profile"
+            to="/account"
             onClick={() => setOpen(false)}
             className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-surface-700 hover:text-white"
           >
-            <User className="w-4 h-4" />
-            Profile
+            <Settings className="w-4 h-4" />
+            Account settings
           </Link>
           <button
             type="button"

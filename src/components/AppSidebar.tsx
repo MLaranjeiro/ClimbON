@@ -1,4 +1,4 @@
-import { Home, Map, PanelLeftClose, PanelLeftOpen, ShieldCog } from 'lucide-react';
+import { Map, PanelLeftClose, PanelLeftOpen, ShieldCog, User } from 'lucide-react';
 import { useState, type ComponentType } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/auth';
@@ -11,7 +11,7 @@ interface NavItem {
 }
 
 const baseNavItems: NavItem[] = [
-  { to: '/', label: 'Dashboard', icon: Home, end: true },
+  { to: '/', label: 'My Profile', icon: User, end: true },
   { to: '/routes', label: 'Routes', icon: Map },
 ];
 
