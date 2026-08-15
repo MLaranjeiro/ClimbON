@@ -9,12 +9,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadProfile(userId: string) {
-      const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
-      setProfile(data as UserProfile | null);
-    }
+  async function loadProfile(userId: string) {
+    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    setProfile(data as UserProfile | null);
+  }
 
+  useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setLoading(false);
@@ -41,9 +41,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   }
 
+  async function refreshProfile() {
+    if (session?.user) {
+      await loadProfile(session.user.id);
+    }
+  }
+
   return (
     <AuthContext.Provider
-      value={{ session, user: session?.user ?? null, profile, loading, signOut }}
+      value={{ session, user: session?.user ?? null, profile, loading, signOut, refreshProfile }}
     >
       {children}
     </AuthContext.Provider>

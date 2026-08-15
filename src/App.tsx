@@ -4,12 +4,12 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { AuthProvider } from './context/auth';
 import { AuthLayout } from './layouts/AuthLayout';
 import { RootLayout } from './layouts/RootLayout';
+import { AccountSettings } from './pages/AccountSettings';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { Dashboard } from './pages/Dashboard';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { Login } from './pages/Login';
 import { NotFound } from './pages/NotFound';
-import { Profile } from './pages/Profile';
 import { Register } from './pages/Register';
 import { ResetPassword } from './pages/ResetPassword';
 import { RouteDetails } from './pages/RouteDetails';
@@ -37,7 +37,7 @@ export default function App() {
               }
             >
               <Route index element={<Dashboard />} />
-              <Route path="profile" element={<Profile />} />
+              <Route path="account" element={<AccountSettings />} />
               <Route path="routes" element={<RouteList />} />
               <Route path="routes/:routeId" element={<RouteDetails />} />
               <Route
