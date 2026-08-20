@@ -1,6 +1,7 @@
-import type { UserRole } from '../types';
+import type { GymMembership } from '../types';
+import { hasAnyGymRole } from './permissions';
 
-export function getHomeRoute(role?: UserRole | null): string {
-  if (role === 'route_setter') return '/admin';
+export function getHomeRoute(memberships?: Pick<GymMembership, 'gym_id' | 'role'>[] | null): string {
+  if (memberships && hasAnyGymRole(memberships)) return '/admin';
   return '/';
 }

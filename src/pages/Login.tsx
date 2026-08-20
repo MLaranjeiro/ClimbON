@@ -5,7 +5,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ErrorAlert } from '../components/ErrorAlert';
 import { getHomeRoute } from '../lib/getHomeRoute';
 import { supabase } from '../lib/supabase';
-import type { UserRole } from '../types';
 
 export function Login() {
   const navigate = useNavigate();
@@ -28,14 +27,13 @@ export function Login() {
       return;
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', data.user.id)
-      .single();
+    const { data: memberships } = await supabase
+      .from('gym_memberships')
+      .select('gym_id, role')
+      .eq('user_id', data.user.id);
 
     setSubmitting(false);
-    navigate(getHomeRoute(profile?.role as UserRole | undefined));
+    navigate(getHomeRoute(memberships ?? null));
   }
 
   return (

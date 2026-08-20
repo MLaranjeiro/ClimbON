@@ -1,11 +1,12 @@
 import type { Session, User } from '@supabase/supabase-js';
 import { createContext } from 'react';
-import type { UserProfile } from '../../types';
+import type { GymMembership, UserProfile } from '../../types';
 
 export interface AuthContextValue {
   session: Session | null;
   user: User | null;
   profile: UserProfile | null;
+  gymMemberships: GymMembership[];
   loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;

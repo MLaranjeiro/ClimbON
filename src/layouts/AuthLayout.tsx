@@ -4,10 +4,10 @@ import { useAuth } from '../context/auth';
 import { getHomeRoute } from '../lib/getHomeRoute';
 
 export function AuthLayout() {
-  const { session, profile, loading } = useAuth();
+  const { session, gymMemberships, loading } = useAuth();
 
   if (loading) return null;
-  if (session) return <Navigate to={getHomeRoute(profile?.role)} replace />;
+  if (session) return <Navigate to={getHomeRoute(gymMemberships)} replace />;
 
   return (
     <div className="min-h-screen bg-surface-900 flex flex-col items-center justify-center px-6 py-12">

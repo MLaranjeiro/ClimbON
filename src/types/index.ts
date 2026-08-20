@@ -1,10 +1,8 @@
-export type UserRole = 'climber' | 'route_setter';
-
 export interface UserProfile {
   id: string;
   username: string;
   email: string;
-  role: UserRole;
+  is_platform_admin: boolean;
   profile_bio: string | null;
   avatar_url: string | null;
   created_at: string;
@@ -15,6 +13,32 @@ export interface Gym {
   gym_name: string;
   location_address: string | null;
   created_at: string;
+}
+
+export type GymRole = 'gym_admin' | 'route_setter';
+
+export interface GymMembership {
+  id: number;
+  user_id: string;
+  gym_id: number;
+  role: GymRole;
+  created_at: string;
+  gym?: Gym;
+}
+
+export type GymRoleRequestStatus = 'pending' | 'approved' | 'rejected';
+
+export interface GymRoleRequest {
+  id: number;
+  user_id: string;
+  gym_id: number;
+  requested_role: GymRole;
+  status: GymRoleRequestStatus;
+  requested_at: string;
+  decided_by: string | null;
+  decided_at: string | null;
+  gym?: Gym;
+  profile?: Pick<UserProfile, 'id' | 'username'>;
 }
 
 export type RouteGrade =

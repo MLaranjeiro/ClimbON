@@ -43,7 +43,7 @@ export default function App() {
               <Route
                 path="admin"
                 element={
-                  <ProtectedRoute role="route_setter">
+                  <ProtectedRoute requireGymRole>
                     <AdminDashboard />
                   </ProtectedRoute>
                 }
