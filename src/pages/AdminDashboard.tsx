@@ -6,6 +6,7 @@ import { ErrorAlert } from '../components/ErrorAlert';
 import { useAuth } from '../context/auth';
 import { GRADE_ORDER, getGradeBadgeClasses } from '../lib/grades';
 import { isGymAdmin } from '../lib/permissions';
+import { ROUTE_STYLES } from '../lib/routeStyles';
 import { supabase } from '../lib/supabase';
 import type { GymRole, RouteGrade, RouteStatus } from '../types';
 
@@ -16,6 +17,7 @@ interface RouteRow {
   status: RouteStatus;
   description: string | null;
   image_url: string | null;
+  styles: string[];
   gym_id: number;
   section_id: number | null;
   gym: { gym_name: string } | null;
@@ -49,6 +51,7 @@ interface RouteFormState {
   status: RouteStatus;
   description: string;
   imageUrl: string;
+  styles: string[];
 }
 
 const EMPTY_FORM: RouteFormState = {
@@ -59,19 +62,35 @@ const EMPTY_FORM: RouteFormState = {
   status: 'active',
   description: '',
   imageUrl: '',
+  styles: [],
 };
 
 type Tab = 'routes' | 'team';
 
 export function AdminDashboard() {
-  const { user, gymMemberships, refreshProfile } = useAuth();
+  const { user, profile, gymMemberships, refreshProfile } = useAuth();
   const queryClient = useQueryClient();
+  const isPlatformAdmin = Boolean(profile?.is_platform_admin);
+
+  const { data: allGyms } = useQuery({
+    queryKey: ['gyms'],
+    enabled: isPlatformAdmin,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('gyms').select('id, gym_name').order('gym_name');
+      if (error) throw error;
+      return data as { id: number; gym_name: string }[];
+    },
+  });
+
+  const gymOptions = isPlatformAdmin
+    ? (allGyms ?? [])
+    : gymMemberships.map((m) => ({ id: m.gym_id, gym_name: m.gym?.gym_name ?? `Gym ${m.gym_id}` }));
 
   const [selectedGymId, setSelectedGymId] = useState<number | null>(null);
-  const effectiveGymId = selectedGymId ?? gymMemberships[0]?.gym_id ?? null;
+  const effectiveGymId = selectedGymId ?? gymOptions[0]?.id ?? null;
 
   const [tab, setTab] = useState<Tab>('routes');
-  const canManageTeam = isGymAdmin(gymMemberships, effectiveGymId);
+  const canManageTeam = isPlatformAdmin || isGymAdmin(gymMemberships, effectiveGymId);
   const effectiveTab: Tab = tab === 'team' && !canManageTeam ? 'routes' : tab;
 
   const { data: routes, isLoading: routesLoading } = useQuery({
@@ -81,7 +100,7 @@ export function AdminDashboard() {
       const { data, error } = await supabase
         .from('routes')
         .select(
-          'id, route_name, grade, status, description, image_url, gym_id, section_id, gym:gyms(gym_name), section:sections(section_name)',
+          'id, route_name, grade, status, description, image_url, styles, gym_id, section_id, gym:gyms(gym_name), section:sections(section_name)',
         )
         .eq('gym_id', effectiveGymId as number)
         .order('route_name');
@@ -102,11 +121,6 @@ export function AdminDashboard() {
       return data as unknown as TeamMemberRow[];
     },
   });
-
-  const gymOptions = gymMemberships.map((m) => ({
-    id: m.gym_id,
-    gym_name: m.gym?.gym_name ?? `Gym ${m.gym_id}`,
-  }));
 
   const [memberSearch, setMemberSearch] = useState('');
   const [roleByUser, setRoleByUser] = useState<Record<string, GymRole>>({});
@@ -198,6 +212,7 @@ export function AdminDashboard() {
       status: route.status,
       description: route.description ?? '',
       imageUrl: route.image_url ?? '',
+      styles: route.styles,
     });
     setFormError(null);
     setImageError(null);
@@ -256,6 +271,7 @@ export function AdminDashboard() {
       status: form.status,
       description: form.description.trim() || null,
       image_url: form.imageUrl || null,
+      styles: form.styles,
     };
 
     const { error } =
@@ -323,7 +339,11 @@ export function AdminDashboard() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Route Setter admin</h1>
-          <p className="text-gray-500 mt-1">Create, edit, and manage routes across your gyms.</p>
+          <p className="text-gray-500 mt-1">
+            {isPlatformAdmin
+              ? 'Create, edit, and manage routes across every gym.'
+              : 'Create, edit, and manage routes across your gyms.'}
+          </p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
           {gymOptions.length > 1 && (
@@ -710,6 +730,32 @@ export function AdminDashboard() {
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                   placeholder="Describe the route, holds, cruxes, and beta."
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-600 mb-2">Styles</label>
+                <div className="flex flex-wrap gap-2">
+                  {ROUTE_STYLES.map((style) => {
+                    const active = form.styles.includes(style);
+                    return (
+                      <button
+                        key={style}
+                        type="button"
+                        onClick={() =>
+                          setForm((f) => ({
+                            ...f,
+                            styles: f.styles.includes(style)
+                              ? f.styles.filter((s) => s !== style)
+                              : [...f.styles, style],
+                          }))
+                        }
+                        className={`badge cursor-pointer ${active ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-600'}`}
+                      >
+                        {style}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div>
