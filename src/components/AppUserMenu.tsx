@@ -1,7 +1,8 @@
-import { LogOut, Settings, UserCircle } from 'lucide-react';
+import { LogOut, Settings } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/auth';
+import { Avatar } from './Avatar';
 
 export function AppUserMenu() {
   const { profile, signOut } = useAuth();
@@ -32,7 +33,7 @@ export function AppUserMenu() {
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-gray-300 hover:bg-surface-700 hover:text-white"
       >
-        <UserCircle className="w-5 h-5" />
+        <Avatar src={profile?.avatar_url} name={profile?.username} size={22} />
         <span>{profile?.username ?? 'Account'}</span>
       </button>
 

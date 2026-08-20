@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle, Loader2, Pencil, Plus, XCircle } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
+import { Avatar } from '../components/Avatar';
 import { ErrorAlert } from '../components/ErrorAlert';
 import { useAuth } from '../context/auth';
 import { GRADE_ORDER, getGradeBadgeClasses } from '../lib/grades';
@@ -22,13 +23,14 @@ interface TeamMemberRow {
   id: number;
   user_id: string;
   role: GymRole;
-  profile: { username: string; email: string } | null;
+  profile: { username: string; email: string; avatar_url: string | null } | null;
 }
 
 interface UserOption {
   id: string;
   username: string;
   email: string;
+  avatar_url: string | null;
 }
 
 interface RouteFormState {
@@ -80,7 +82,7 @@ export function AdminDashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('gym_memberships')
-        .select('id, user_id, role, profile:profiles(username, email)')
+        .select('id, user_id, role, profile:profiles(username, email, avatar_url)')
         .eq('gym_id', effectiveGymId as number);
       if (error) throw error;
       return data as unknown as TeamMemberRow[];
@@ -106,7 +108,7 @@ export function AdminDashboard() {
       const q = trimmedSearch.replace(/[,()%]/g, '');
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, username, email')
+        .select('id, username, email, avatar_url')
         .or(`username.ilike.%${q}%,email.ilike.%${q}%`)
         .limit(10);
       if (error) throw error;
@@ -377,9 +379,12 @@ export function AdminDashboard() {
                     key={u.id}
                     className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2"
                   >
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{u.username}</p>
-                      <p className="text-xs text-gray-500">{u.email}</p>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar src={u.avatar_url} name={u.username} size={32} />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900">{u.username}</p>
+                        <p className="text-xs text-gray-500">{u.email}</p>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <select
@@ -427,8 +432,13 @@ export function AdminDashboard() {
                 {team.map((member) => (
                   <tr key={member.id}>
                     <td className="px-5 py-3">
-                      <p className="font-medium text-gray-900">{member.profile?.username ?? 'Unknown user'}</p>
-                      <p className="text-xs text-gray-500">{member.profile?.email}</p>
+                      <div className="flex items-center gap-3">
+                        <Avatar src={member.profile?.avatar_url} name={member.profile?.username} size={32} />
+                        <div>
+                          <p className="font-medium text-gray-900">{member.profile?.username ?? 'Unknown user'}</p>
+                          <p className="text-xs text-gray-500">{member.profile?.email}</p>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-5 py-3">
                       <span
