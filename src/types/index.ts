@@ -12,6 +12,16 @@ export interface Gym {
   id: number;
   gym_name: string;
   location_address: string | null;
+  city: string | null;
+  website: string | null;
+  phone: string | null;
+  instagram_url: string | null;
+  about_text: string | null;
+  waiver_text: string | null;
+  amenities: string[];
+  logo_url: string | null;
+  cover_image_url: string | null;
+  map_image_url: string | null;
   created_at: string;
 }
 
@@ -45,6 +55,8 @@ export interface Section {
   id: number;
   gym_id: number;
   section_name: string;
+  map_x: number | null;
+  map_y: number | null;
   created_at: string;
 }
 
@@ -63,6 +75,7 @@ export interface Route {
   status: RouteStatus;
   description: string | null;
   image_url: string | null;
+  styles: string[];
   created_by: string;
   created_at: string;
   gym?: Gym;
