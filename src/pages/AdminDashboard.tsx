@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle, ImagePlus, Loader2, Pencil, Plus, XCircle } from 'lucide-react';
+import { CheckCircle, ImagePlus, Loader2, Pencil, Plus, Trash2, XCircle } from 'lucide-react';
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Avatar } from '../components/Avatar';
 import { ErrorAlert } from '../components/ErrorAlert';
@@ -162,6 +162,8 @@ export function AdminDashboard() {
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [statusUpdatingId, setStatusUpdatingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [revokingId, setRevokingId] = useState<number | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
@@ -282,6 +284,26 @@ export function AdminDashboard() {
     }
   }
 
+  async function deleteRoute(route: RouteRow) {
+    if (!window.confirm(`Delete "${route.route_name}"? This can't be undone.`)) return;
+
+    setDeletingId(route.id);
+    setDeleteError(null);
+    const { error } = await supabase.from('routes').delete().eq('id', route.id);
+    setDeletingId(null);
+
+    if (error) {
+      setDeleteError(
+        error.code === '23503'
+          ? 'This route can’t be deleted because people have already logged sends or beta on it. Deactivate it instead.'
+          : error.message,
+      );
+      return;
+    }
+
+    await queryClient.invalidateQueries({ queryKey: ['admin-routes', effectiveGymId] });
+  }
+
   async function revokeMember(member: TeamMemberRow) {
     setRevokingId(member.id);
     const { error } = await supabase.from('gym_memberships').delete().eq('id', member.id);
@@ -350,6 +372,11 @@ export function AdminDashboard() {
 
       {effectiveTab === 'routes' && (
         <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          {deleteError && (
+            <div className="p-5 pb-0">
+              <ErrorAlert message={deleteError} light />
+            </div>
+          )}
           {routesLoading ? (
             <p className="text-gray-500 text-sm p-5">Loading…</p>
           ) : !routes || routes.length === 0 ? (
@@ -408,6 +435,20 @@ export function AdminDashboard() {
                             <XCircle className="w-4 h-4" />
                           ) : (
                             <CheckCircle className="w-4 h-4" />
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteRoute(route)}
+                          disabled={deletingId === route.id}
+                          className="text-gray-500 hover:text-red-600 disabled:opacity-50"
+                          title="Delete route"
+                          aria-label="Delete route"
+                        >
+                          {deletingId === route.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
                           )}
                         </button>
                       </div>
