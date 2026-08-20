@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle, Loader2, Pencil, Plus, XCircle } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
+import { CheckCircle, ImagePlus, Loader2, Pencil, Plus, XCircle } from 'lucide-react';
+import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Avatar } from '../components/Avatar';
 import { ErrorAlert } from '../components/ErrorAlert';
 import { useAuth } from '../context/auth';
@@ -15,8 +15,16 @@ interface RouteRow {
   grade: RouteGrade;
   status: RouteStatus;
   description: string | null;
+  image_url: string | null;
   gym_id: number;
+  section_id: number | null;
   gym: { gym_name: string } | null;
+  section: { section_name: string } | null;
+}
+
+interface SectionOption {
+  id: number;
+  section_name: string;
 }
 
 interface TeamMemberRow {
@@ -36,17 +44,21 @@ interface UserOption {
 interface RouteFormState {
   routeName: string;
   gymId: string;
+  sectionId: string;
   grade: RouteGrade;
   status: RouteStatus;
   description: string;
+  imageUrl: string;
 }
 
 const EMPTY_FORM: RouteFormState = {
   routeName: '',
   gymId: '',
+  sectionId: '',
   grade: 'V0',
   status: 'active',
   description: '',
+  imageUrl: '',
 };
 
 type Tab = 'routes' | 'team';
@@ -68,7 +80,9 @@ export function AdminDashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('routes')
-        .select('id, route_name, grade, status, description, gym_id, gym:gyms(gym_name)')
+        .select(
+          'id, route_name, grade, status, description, image_url, gym_id, section_id, gym:gyms(gym_name), section:sections(section_name)',
+        )
         .eq('gym_id', effectiveGymId as number)
         .order('route_name');
       if (error) throw error;
@@ -149,6 +163,23 @@ export function AdminDashboard() {
   const [saving, setSaving] = useState(false);
   const [statusUpdatingId, setStatusUpdatingId] = useState<number | null>(null);
   const [revokingId, setRevokingId] = useState<number | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+
+  const { data: formSections } = useQuery({
+    queryKey: ['gym-sections', form.gymId],
+    enabled: !!form.gymId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('sections')
+        .select('id, section_name')
+        .eq('gym_id', Number(form.gymId))
+        .order('section_name');
+      if (error) throw error;
+      return data as SectionOption[];
+    },
+  });
 
   function openCreate() {
     setForm({ ...EMPTY_FORM, gymId: effectiveGymId ? String(effectiveGymId) : '' });
@@ -160,17 +191,49 @@ export function AdminDashboard() {
     setForm({
       routeName: route.route_name,
       gymId: String(route.gym_id),
+      sectionId: route.section_id ? String(route.section_id) : '',
       grade: route.grade,
       status: route.status,
       description: route.description ?? '',
+      imageUrl: route.image_url ?? '',
     });
     setFormError(null);
+    setImageError(null);
     setFormTarget(route);
   }
 
   function closeForm() {
     setFormTarget(null);
     setFormError(null);
+    setImageError(null);
+  }
+
+  async function handleImageChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !form.gymId) return;
+
+    setImageError(null);
+    setImageUploading(true);
+
+    const ext = file.name.split('.').pop();
+    const path = `${form.gymId}/${crypto.randomUUID()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage.from('route-images').upload(path, file);
+
+    if (uploadError) {
+      setImageUploading(false);
+      setImageError(uploadError.message);
+      return;
+    }
+
+    const { data } = supabase.storage.from('route-images').getPublicUrl(path);
+    setImageUploading(false);
+    setForm((f) => ({ ...f, imageUrl: data.publicUrl }));
+  }
+
+  function removeImage() {
+    setForm((f) => ({ ...f, imageUrl: '' }));
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -186,9 +249,11 @@ export function AdminDashboard() {
     const payload = {
       route_name: form.routeName.trim(),
       gym_id: Number(form.gymId),
+      section_id: form.sectionId ? Number(form.sectionId) : null,
       grade: form.grade,
       status: form.status,
       description: form.description.trim() || null,
+      image_url: form.imageUrl || null,
     };
 
     const { error } =
@@ -295,6 +360,7 @@ export function AdminDashboard() {
                 <tr className="border-b border-gray-200 text-left text-gray-500">
                   <th className="px-5 py-3 font-medium">Route</th>
                   <th className="px-5 py-3 font-medium">Gym</th>
+                  <th className="px-5 py-3 font-medium">Section</th>
                   <th className="px-5 py-3 font-medium">Grade</th>
                   <th className="px-5 py-3 font-medium">Status</th>
                   <th className="px-5 py-3 font-medium text-right">Actions</th>
@@ -305,6 +371,7 @@ export function AdminDashboard() {
                   <tr key={route.id}>
                     <td className="px-5 py-3 font-medium text-gray-900">{route.route_name}</td>
                     <td className="px-5 py-3 text-gray-600">{route.gym?.gym_name ?? '—'}</td>
+                    <td className="px-5 py-3 text-gray-600">{route.section?.section_name ?? '—'}</td>
                     <td className="px-5 py-3">
                       <span className={`badge ${getGradeBadgeClasses(route.grade)}`}>{route.grade}</span>
                     </td>
@@ -528,7 +595,7 @@ export function AdminDashboard() {
                   </select>
                 </div>
 
-                <div className={isCreating ? 'sm:col-span-2' : ''}>
+                <div>
                   <label htmlFor="gym" className="block text-sm text-gray-600 mb-1">
                     Gym
                   </label>
@@ -536,7 +603,7 @@ export function AdminDashboard() {
                     id="gym"
                     className="input-field-light"
                     value={form.gymId}
-                    onChange={(e) => setForm((f) => ({ ...f, gymId: e.target.value }))}
+                    onChange={(e) => setForm((f) => ({ ...f, gymId: e.target.value, sectionId: '' }))}
                     required
                   >
                     <option value="" disabled>
@@ -548,6 +615,29 @@ export function AdminDashboard() {
                       </option>
                     ))}
                   </select>
+                </div>
+
+                <div>
+                  <label htmlFor="section" className="block text-sm text-gray-600 mb-1">
+                    Section
+                  </label>
+                  <select
+                    id="section"
+                    className="input-field-light"
+                    value={form.sectionId}
+                    onChange={(e) => setForm((f) => ({ ...f, sectionId: e.target.value }))}
+                    disabled={!form.gymId}
+                  >
+                    <option value="">No section</option>
+                    {formSections?.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.section_name}
+                      </option>
+                    ))}
+                  </select>
+                  {form.gymId && formSections && formSections.length === 0 && (
+                    <p className="text-xs text-gray-500 mt-1">No sections set up for this gym yet.</p>
+                  )}
                 </div>
 
                 {!isCreating && (
@@ -579,6 +669,65 @@ export function AdminDashboard() {
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                   placeholder="Describe the route, holds, cruxes, and beta."
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Route Image</label>
+                {form.imageUrl ? (
+                  <div className="relative">
+                    <img
+                      src={form.imageUrl}
+                      alt=""
+                      className="w-full h-40 object-cover rounded-lg border border-gray-200"
+                    />
+                    <div className="absolute top-2 right-2 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => imageInputRef.current?.click()}
+                        className="bg-white/90 hover:bg-white text-gray-700 text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-sm"
+                      >
+                        Change
+                      </button>
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        className="bg-white/90 hover:bg-white text-red-600 text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-sm"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => imageInputRef.current?.click()}
+                    disabled={imageUploading || !form.gymId}
+                    className="w-full h-32 flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-600 disabled:opacity-50"
+                  >
+                    {imageUploading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>
+                        <ImagePlus className="w-5 h-5" />
+                        <span className="text-sm">
+                          {form.gymId ? 'Click to upload an image' : 'Select a gym first'}
+                        </span>
+                      </>
+                    )}
+                  </button>
+                )}
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageChange}
+                />
+                {imageError && (
+                  <div className="mt-2">
+                    <ErrorAlert message={imageError} light />
+                  </div>
+                )}
               </div>
 
               {formError && <ErrorAlert message={formError} light />}

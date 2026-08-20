@@ -41,6 +41,13 @@ export interface GymRoleRequest {
   profile?: Pick<UserProfile, 'id' | 'username'>;
 }
 
+export interface Section {
+  id: number;
+  gym_id: number;
+  section_name: string;
+  created_at: string;
+}
+
 export type RouteGrade =
   | 'VB' | 'V0' | 'V1' | 'V2' | 'V3' | 'V4' | 'V5'
   | 'V6' | 'V7' | 'V8' | 'V9' | 'V10' | 'V11' | 'V12';
@@ -50,6 +57,7 @@ export type RouteStatus = 'active' | 'inactive';
 export interface Route {
   id: number;
   gym_id: number;
+  section_id: number | null;
   route_name: string;
   grade: RouteGrade;
   status: RouteStatus;
@@ -58,6 +66,7 @@ export interface Route {
   created_by: string;
   created_at: string;
   gym?: Gym;
+  section?: Section;
   send_count?: number;
   avg_difficulty?: number | null;
 }
