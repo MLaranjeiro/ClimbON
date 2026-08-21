@@ -34,7 +34,7 @@ export function RootLayout() {
         <div className="flex items-center gap-6 max-w-[1400px] mx-auto">
           <Link to="/" className="flex items-center gap-2 font-bold text-white shrink-0">
             <Mountain className="w-5 h-5 text-brand-500" />
-            Beta Tracker
+            ClimbON
           </Link>
 
           <nav className="flex items-center gap-1">
