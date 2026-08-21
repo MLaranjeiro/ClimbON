@@ -3,6 +3,7 @@ export interface UserProfile {
   username: string;
   email: string;
   is_platform_admin: boolean;
+  username_confirmed: boolean;
   profile_bio: string | null;
   avatar_url: string | null;
   created_at: string;

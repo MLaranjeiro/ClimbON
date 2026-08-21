@@ -6,6 +6,7 @@ import { AuthLayout } from './layouts/AuthLayout';
 import { RootLayout } from './layouts/RootLayout';
 import { AccountSettings } from './pages/AccountSettings';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { ChooseUsername } from './pages/ChooseUsername';
 import { Dashboard } from './pages/Dashboard';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { GymAbout } from './pages/GymAbout';
@@ -28,6 +29,7 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
+            <Route path="welcome" element={<ChooseUsername />} />
             <Route element={<AuthLayout />}>
               <Route path="login" element={<Login />} />
               <Route path="register" element={<Register />} />

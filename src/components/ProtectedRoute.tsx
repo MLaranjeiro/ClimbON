@@ -17,6 +17,7 @@ export function ProtectedRoute({
 
   if (loading) return <p className="text-gray-400">Loading…</p>;
   if (!session) return <Navigate to="/login" replace />;
+  if (profile && !profile.username_confirmed) return <Navigate to="/welcome" replace />;
   if (requireGymRole && !hasAnyGymRole(gymMemberships) && !profile?.is_platform_admin) {
     return <Navigate to={getHomeRoute(gymMemberships)} replace />;
   }
