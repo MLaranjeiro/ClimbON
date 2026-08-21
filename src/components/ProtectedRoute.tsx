@@ -19,9 +19,9 @@ export function ProtectedRoute({
   if (!session) return <Navigate to="/login" replace />;
   if (profile && !profile.username_confirmed) return <Navigate to="/welcome" replace />;
   if (requireGymRole && !hasAnyGymRole(gymMemberships) && !profile?.is_platform_admin) {
-    return <Navigate to={getHomeRoute(gymMemberships)} replace />;
+    return <Navigate to={getHomeRoute()} replace />;
   }
-  if (requirePlatformAdmin && !profile?.is_platform_admin) return <Navigate to={getHomeRoute(gymMemberships)} replace />;
+  if (requirePlatformAdmin && !profile?.is_platform_admin) return <Navigate to={getHomeRoute()} replace />;
 
   return <>{children}</>;
 }

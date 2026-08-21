@@ -45,13 +45,8 @@ export function Login() {
       return;
     }
 
-    const { data: memberships } = await supabase
-      .from('gym_memberships')
-      .select('gym_id, role')
-      .eq('user_id', data.user.id);
-
     setSubmitting(false);
-    navigate(getHomeRoute(memberships ?? null));
+    navigate(getHomeRoute());
   }
 
   return (

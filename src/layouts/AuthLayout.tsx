@@ -4,11 +4,11 @@ import { useAuth } from '../context/auth';
 import { getHomeRoute } from '../lib/getHomeRoute';
 
 export function AuthLayout() {
-  const { session, gymMemberships, loading } = useAuth();
+  const { session, loading } = useAuth();
   const location = useLocation();
 
   if (loading) return null;
-  if (session) return <Navigate to={getHomeRoute(gymMemberships)} replace />;
+  if (session) return <Navigate to={getHomeRoute()} replace />;
 
   const isLogin = location.pathname === '/login';
   const isRegister = location.pathname === '/register';
