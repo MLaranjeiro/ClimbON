@@ -1,4 +1,4 @@
-import { Bell, Map, Mountain, ShieldCog, User } from 'lucide-react';
+import { Bell, Building2, Map, Mountain, ShieldCog, User } from 'lucide-react';
 import { type ComponentType } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { AppUserMenu } from '../components/AppUserMenu';
@@ -18,11 +18,14 @@ const baseNavItems: NavItem[] = [
 ];
 
 export function RootLayout() {
-  const { gymMemberships } = useAuth();
+  const { profile, gymMemberships } = useAuth();
 
   const items = [...baseNavItems];
   if (hasAnyGymRole(gymMemberships)) {
     items.push({ to: '/admin', label: 'Admin', icon: ShieldCog });
+  }
+  if (profile?.is_platform_admin) {
+    items.push({ to: '/platform/gyms', label: 'Manage Gyms', icon: Building2 });
   }
 
   return (

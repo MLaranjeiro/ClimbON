@@ -8,12 +8,17 @@ import { AccountSettings } from './pages/AccountSettings';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { Dashboard } from './pages/Dashboard';
 import { ForgotPassword } from './pages/ForgotPassword';
+import { GymAbout } from './pages/GymAbout';
+import { GymMap } from './pages/GymMap';
+import { GymOverview } from './pages/GymOverview';
+import { GymPicker } from './pages/GymPicker';
 import { Login } from './pages/Login';
 import { NotFound } from './pages/NotFound';
+import { PlatformGyms } from './pages/PlatformGyms';
 import { Register } from './pages/Register';
 import { ResetPassword } from './pages/ResetPassword';
-import { RouteDetails } from './pages/RouteDetails';
-import { RouteList } from './pages/RouteList';
+import { RouteDetail } from './pages/RouteDetail';
+import { SectionClimbs } from './pages/SectionClimbs';
 
 const queryClient = new QueryClient();
 
@@ -38,13 +43,25 @@ export default function App() {
             >
               <Route index element={<Dashboard />} />
               <Route path="account" element={<AccountSettings />} />
-              <Route path="routes" element={<RouteList />} />
-              <Route path="routes/:routeId" element={<RouteDetails />} />
+              <Route path="routes" element={<GymPicker />} />
+              <Route path="routes/:gymId" element={<GymOverview />} />
+              <Route path="routes/:gymId/map" element={<GymMap />} />
+              <Route path="routes/:gymId/about" element={<GymAbout />} />
+              <Route path="routes/:gymId/sections/:sectionId" element={<SectionClimbs />} />
+              <Route path="routes/:gymId/climbs/:routeId" element={<RouteDetail />} />
               <Route
                 path="admin"
                 element={
                   <ProtectedRoute requireGymRole>
                     <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="platform/gyms"
+                element={
+                  <ProtectedRoute requirePlatformAdmin>
+                    <PlatformGyms />
                   </ProtectedRoute>
                 }
               />
