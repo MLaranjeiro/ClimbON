@@ -30,11 +30,13 @@ export function RootLayout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <header className="border-b border-surface-700 bg-surface-800 px-6 py-2.5">
-        <div className="flex items-center gap-6 max-w-[1400px] mx-auto">
-          <Link to="/" className="flex items-center gap-2 font-bold text-white shrink-0">
-            <Mountain className="w-5 h-5 text-brand-500" />
-            ClimbON
+      <header className="px-4 pt-4 pb-2 bg-gray-50">
+        <div className="flex items-center gap-6 max-w-[1400px] mx-auto rounded-full bg-gradient-to-br from-brand-600 to-brand-800 pl-2 pr-3 py-2 shadow-lg shadow-brand-900/20">
+          <Link
+            to="/"
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-white shrink-0"
+          >
+            <Mountain className="w-5 h-5 text-brand-600" />
           </Link>
 
           <nav className="flex items-center gap-1">
@@ -44,8 +46,8 @@ export function RootLayout() {
                 to={to}
                 end={end}
                 className={({ isActive }) =>
-                  `flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                    isActive ? 'bg-surface-700 text-white' : 'text-gray-300 hover:bg-surface-700 hover:text-white'
+                  `flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                    isActive ? 'bg-white/15 text-white' : 'text-white/75 hover:bg-white/10 hover:text-white'
                   }`
                 }
               >
@@ -59,7 +61,7 @@ export function RootLayout() {
             <button
               type="button"
               title="Notifications (coming soon)"
-              className="p-2 rounded-lg text-gray-300 hover:bg-surface-700 hover:text-white"
+              className="p-2 rounded-full text-white/75 hover:bg-white/10 hover:text-white"
             >
               <Bell className="w-5 h-5" />
             </button>

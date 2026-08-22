@@ -167,34 +167,42 @@ export function Dashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-8 gap-y-3 sm:ml-auto sm:border-l sm:border-gray-200 sm:pl-6">
-            <div>
-              <div className="flex items-center gap-1.5 text-gray-500 text-xs mb-0.5">
-                <Mountain className="w-3.5 h-3.5" />
-                Total climbs
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-4 sm:ml-auto sm:border-l sm:border-gray-200 sm:pl-6">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
+                <Mountain className="w-4 h-4 text-brand-600" />
               </div>
-              <div className="text-xl font-bold text-gray-900">{totalClimbs}</div>
+              <div>
+                <div className="text-gray-500 text-xs">Total climbs</div>
+                <div className="text-xl font-bold text-gray-900">{totalClimbs}</div>
+              </div>
             </div>
-            <div>
-              <div className="flex items-center gap-1.5 text-gray-500 text-xs mb-0.5">
-                <Award className="w-3.5 h-3.5" />
-                Highest grade
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
+                <Award className="w-4 h-4 text-brand-600" />
               </div>
-              <div className="text-xl font-bold text-gray-900">{highestGrade ?? '—'}</div>
+              <div>
+                <div className="text-gray-500 text-xs">Highest grade</div>
+                <div className="text-xl font-bold text-gray-900">{highestGrade ?? '—'}</div>
+              </div>
             </div>
-            <div>
-              <div className="flex items-center gap-1.5 text-gray-500 text-xs mb-0.5">
-                <Calendar className="w-3.5 h-3.5" />
-                This month
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
+                <Calendar className="w-4 h-4 text-brand-600" />
               </div>
-              <div className="text-xl font-bold text-gray-900">{climbsThisMonth}</div>
+              <div>
+                <div className="text-gray-500 text-xs">This month</div>
+                <div className="text-xl font-bold text-gray-900">{climbsThisMonth}</div>
+              </div>
             </div>
-            <div>
-              <div className="flex items-center gap-1.5 text-gray-500 text-xs mb-0.5">
-                <Flame className="w-3.5 h-3.5" />
-                Weekly streak
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
+                <Flame className="w-4 h-4 text-brand-600" />
               </div>
-              <div className="text-xl font-bold text-gray-900">{weeklyStreak}</div>
+              <div>
+                <div className="text-gray-500 text-xs">Weekly streak</div>
+                <div className="text-xl font-bold text-gray-900">{weeklyStreak}</div>
+              </div>
             </div>
           </div>
         </div>
@@ -297,7 +305,7 @@ export function Dashboard() {
 
           <section className="card-light">
             <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <Sparkles className="w-4 h-4" />
+              <Sparkles className="w-4 h-4 text-brand-600" />
               Recommended routes
             </h2>
             <p className="text-gray-500 text-sm">Route recommendations are coming soon.</p>
@@ -369,7 +377,7 @@ export function Dashboard() {
 
           <section className="card-light">
             <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <Target className="w-4 h-4" />
+              <Target className="w-4 h-4 text-brand-600" />
               Current goals
             </h2>
             <p className="text-gray-500 text-sm">Goal tracking is coming soon.</p>
