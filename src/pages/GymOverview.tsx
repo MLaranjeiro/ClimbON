@@ -3,6 +3,9 @@ import { Info, Map as MapIcon, Search } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Bar, BarChart, Cell, ResponsiveContainer } from 'recharts';
+import { GradeBreakdownModal } from '../components/GradeBreakdownModal';
+import { GymMapModal } from '../components/GymMapModal';
+import { InfoModal } from '../components/InfoModal';
 import { RouteRow } from '../components/RouteRow';
 import { WallDirectoryList } from '../components/WallDirectoryList';
 import { GRADE_ORDER, getGradeColorHex } from '../lib/grades';
@@ -32,6 +35,9 @@ export function GymOverview() {
   const { gymId } = useParams();
   const id = Number(gymId);
   const [query, setQuery] = useState('');
+  const [showMap, setShowMap] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
+  const [showGradeBreakdown, setShowGradeBreakdown] = useState(false);
 
   const { data: gym, isLoading: gymLoading } = useQuery({
     queryKey: ['gym', id],
@@ -75,10 +81,11 @@ export function GymOverview() {
   const climbsCount = routeList.length;
   const setThisWeek = routeList.filter((r) => isWithinDays(r.created_at, 7)).length;
 
-  const gradeMix = GRADE_ORDER.map((grade) => ({
+  const fullGradeMix = GRADE_ORDER.map((grade) => ({
     grade,
     count: routeList.filter((r) => r.grade === grade).length,
-  })).filter((row) => row.count > 0);
+  }));
+  const gradeMix = fullGradeMix.filter((row) => row.count > 0);
 
   const freshSections = sectionList
     .map((s) => {
@@ -108,51 +115,72 @@ export function GymOverview() {
 
   return (
     <div className="max-w-[1400px] mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <div className="w-16 h-16 rounded-lg overflow-hidden bg-brand-100 flex items-center justify-center shrink-0">
-          {gym.logo_url ? (
-            <img src={gym.logo_url} alt="" className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-2xl font-bold text-brand-700">{gym.gym_name.charAt(0).toUpperCase()}</span>
+      <div>
+        <div className="flex items-start justify-between gap-6 flex-wrap">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-lg overflow-hidden bg-brand-100 flex items-center justify-center shrink-0">
+              {gym.logo_url ? (
+                <img src={gym.logo_url} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-2xl font-bold text-brand-700">{gym.gym_name.charAt(0).toUpperCase()}</span>
+              )}
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">{gym.gym_name}</h1>
+              {gym.location_address && <p className="text-gray-500 mt-0.5 text-sm">{gym.location_address}</p>}
+            </div>
+          </div>
+
+          {gradeMix.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowGradeBreakdown(true)}
+              className="w-40 shrink-0 rounded-lg -m-2 p-2 hover:bg-gray-50 transition-colors"
+              title="View grade breakdown"
+            >
+              <ResponsiveContainer width="100%" height={44}>
+                <BarChart data={gradeMix}>
+                  <Bar dataKey="count" radius={[2, 2, 0, 0]}>
+                    {gradeMix.map((row) => (
+                      <Cell key={row.grade} fill={getGradeColorHex(row.grade)} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+              <p className="text-[10px] text-gray-500 uppercase tracking-wide text-center mt-1">
+                Grade mix · {gradeMix[0].grade}–{gradeMix[gradeMix.length - 1].grade}
+              </p>
+            </button>
           )}
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{gym.gym_name}</h1>
-          {gym.location_address && <p className="text-gray-500 mt-0.5">{gym.location_address}</p>}
-        </div>
-      </div>
 
-      <div className="flex flex-wrap items-center gap-x-10 gap-y-3">
-        <div>
-          <p className="text-xs text-gray-500">Walls</p>
-          <p className="text-xl font-bold text-gray-900">{wallsCount}</p>
-        </div>
-        <div>
-          <p className="text-xs text-gray-500">Climbs</p>
-          <p className="text-xl font-bold text-gray-900">{climbsCount}</p>
-        </div>
-        <div>
-          <p className="text-xs text-gray-500">Set this week</p>
-          <p className="text-xl font-bold text-gray-900">{setThisWeek}</p>
-        </div>
-        {gradeMix.length > 0 && (
-          <div className="flex-1 min-w-[160px] max-w-xs">
-            <p className="text-xs text-gray-500 mb-1">Grade mix</p>
-            <ResponsiveContainer width="100%" height={36}>
-              <BarChart data={gradeMix}>
-                <Bar dataKey="count" radius={[2, 2, 0, 0]}>
-                  {gradeMix.map((row) => (
-                    <Cell key={row.grade} fill={getGradeColorHex(row.grade)} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+        <div className="flex items-center justify-between gap-4 flex-wrap mt-6">
+          <div className="flex items-center gap-8">
+            <div>
+              <p className="text-xl font-bold text-gray-900">{wallsCount}</p>
+              <p className="text-[11px] text-gray-500 uppercase tracking-wide">Walls</p>
+            </div>
+            <div>
+              <p className="text-xl font-bold text-gray-900">{climbsCount}</p>
+              <p className="text-[11px] text-gray-500 uppercase tracking-wide">Climbs</p>
+            </div>
+            <div>
+              <p className="text-xl font-bold text-gray-900">{setThisWeek}</p>
+              <p className="text-[11px] text-gray-500 uppercase tracking-wide">Set this week</p>
+            </div>
           </div>
-        )}
-        <Link to={`/routes/${id}/about`} className="btn-secondary-light text-sm flex items-center gap-2">
-          <Info className="w-4 h-4" />
-          Info
-        </Link>
+
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => setShowMap(true)} className="btn-primary text-sm flex items-center gap-2">
+              <MapIcon className="w-4 h-4" />
+              Gym Map
+            </button>
+            <button type="button" onClick={() => setShowInfo(true)} className="btn-secondary-light text-sm flex items-center gap-2">
+              <Info className="w-4 h-4" />
+              Info
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="flex items-center gap-3">
@@ -165,10 +193,6 @@ export function GymOverview() {
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
-        <Link to={`/routes/${id}/map`} className="btn-primary text-sm flex items-center gap-2 shrink-0">
-          <MapIcon className="w-4 h-4" />
-          Gym Map
-        </Link>
       </div>
 
       {q ? (
@@ -215,6 +239,16 @@ export function GymOverview() {
             )}
           </section>
         </>
+      )}
+
+      {showMap && <GymMapModal gymId={id} onClose={() => setShowMap(false)} />}
+      {showInfo && <InfoModal gymId={id} onClose={() => setShowInfo(false)} />}
+      {showGradeBreakdown && (
+        <GradeBreakdownModal
+          gradeMix={fullGradeMix}
+          totalClimbs={climbsCount}
+          onClose={() => setShowGradeBreakdown(false)}
+        />
       )}
     </div>
   );
