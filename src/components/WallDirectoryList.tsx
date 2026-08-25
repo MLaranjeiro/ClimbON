@@ -1,4 +1,3 @@
-import { Mountain } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { compareGrades } from '../lib/grades';
 import type { RouteGrade } from '../types';
@@ -25,7 +24,6 @@ interface WallEntry {
   minGrade: RouteGrade | null;
   maxGrade: RouteGrade | null;
   thumbnail: string | null;
-  latestCreatedAt: string | null;
 }
 
 function buildEntry(id: number | 'none', name: string, sectionRoutes: DirectoryRoute[]): WallEntry {
@@ -33,10 +31,6 @@ function buildEntry(id: number | 'none', name: string, sectionRoutes: DirectoryR
   const thumbnail =
     [...sectionRoutes].sort((a, b) => b.created_at.localeCompare(a.created_at)).find((r) => r.image_url)
       ?.image_url ?? null;
-  const latestCreatedAt =
-    sectionRoutes.length > 0
-      ? sectionRoutes.reduce((max, r) => (r.created_at > max ? r.created_at : max), sectionRoutes[0].created_at)
-      : null;
 
   return {
     id,
@@ -45,7 +39,6 @@ function buildEntry(id: number | 'none', name: string, sectionRoutes: DirectoryR
     minGrade: sortedGrades[0] ?? null,
     maxGrade: sortedGrades[sortedGrades.length - 1] ?? null,
     thumbnail,
-    latestCreatedAt,
   };
 }
 
@@ -68,38 +61,30 @@ export function WallDirectoryList({ gymId, sections, routes }: WallDirectoryList
   }
 
   return (
-    <div className="space-y-2">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4">
       {entries.map((entry) => (
         <Link
           key={entry.id}
           to={`/routes/${gymId}/sections/${entry.id}`}
-          className="flex items-center gap-4 rounded-lg border border-gray-200 p-3 hover:border-gray-300 transition-colors"
+          className="group relative h-[145px] sm:h-[220px] overflow-hidden rounded-2xl bg-gray-300 text-white"
         >
-          <div className="w-14 h-14 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center shrink-0">
-            {entry.thumbnail ? (
-              <img src={entry.thumbnail} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <Mountain className="w-5 h-5 text-gray-400" />
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold text-gray-900 truncate">{entry.name}</p>
-            <p className="text-xs text-gray-500 mt-0.5">
-              {entry.count} climb{entry.count === 1 ? '' : 's'}
-              {entry.latestCreatedAt && (
-                <>
-                  {' '}
-                  · Set{' '}
-                  {new Date(entry.latestCreatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                </>
-              )}
-            </p>
-          </div>
+          {entry.thumbnail ? (
+            <img src={entry.thumbnail} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-300 to-gray-400" />
+          )}
+
+          <div className="absolute inset-0 bg-black/20 transition-colors duration-200 group-hover:bg-black/35" />
+
           {entry.minGrade && entry.maxGrade && (
-            <span className="text-xs font-medium text-gray-500 shrink-0">
+            <span className="absolute top-2 right-2 sm:top-3 sm:right-3 text-[10px] sm:text-xs font-semibold bg-white/90 text-gray-700 rounded-full px-2 py-0.5">
               {entry.minGrade === entry.maxGrade ? entry.minGrade : `${entry.minGrade}–${entry.maxGrade}`}
             </span>
           )}
+
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-2 text-center">
+            <h2 className="text-base sm:text-2xl font-semibold leading-tight drop-shadow-sm">{entry.name}</h2>
+          </div>
         </Link>
       ))}
     </div>

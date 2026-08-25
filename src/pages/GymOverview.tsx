@@ -232,8 +232,8 @@ export function GymOverview() {
             </section>
           )}
 
-          <section className="card-light">
-            <h2 className="text-lg font-bold text-gray-900 mb-3">Wall directory</h2>
+          <section>
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Wall directory</h2>
             {routesLoading ? (
               <p className="text-gray-500 text-sm">Loading…</p>
             ) : (
