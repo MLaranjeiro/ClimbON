@@ -34,3 +34,12 @@ export function meetsGrade(grade: RouteGrade | null | undefined, threshold: Rout
   if (!grade) return false;
   return GRADE_ORDER.indexOf(grade) >= GRADE_ORDER.indexOf(threshold);
 }
+
+// Assumes difficulty_ratings.grade stores the plain V-number (V0 = 0, V1 = 1, … V12 = 12),
+// with anything below 0 treated as VB.
+export function gradeFromRatingValue(value: number): RouteGrade {
+  const vNumber = Math.round(value);
+  if (vNumber < 0) return 'VB';
+  const idx = Math.min(vNumber + 1, GRADE_ORDER.length - 1);
+  return GRADE_ORDER[idx];
+}

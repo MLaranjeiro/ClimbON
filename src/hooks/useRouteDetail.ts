@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { GRADE_ORDER, gradeFromRatingValue } from '../lib/grades';
 import { supabase } from '../lib/supabase';
 import type { RouteGrade, RouteStatus } from '../types';
 
@@ -7,7 +8,6 @@ export interface RouteDetailRow {
   route_name: string;
   grade: RouteGrade;
   status: RouteStatus;
-  description: string | null;
   image_url: string | null;
   styles: string[];
   gym_id: number;
@@ -31,7 +31,7 @@ export function useRouteDetail(routeId: number | null) {
       const { data, error } = await supabase
         .from('routes')
         .select(
-          'id, route_name, grade, status, description, image_url, styles, gym_id, gym:gyms(gym_name), section:sections(section_name)',
+          'id, route_name, grade, status, image_url, styles, gym_id, gym:gyms(gym_name), section:sections(section_name)',
         )
         .eq('id', routeId!)
         .single();
@@ -64,7 +64,24 @@ export function useRouteDetail(routeId: number | null) {
       ]);
       const avg =
         ratings && ratings.length > 0 ? ratings.reduce((sum, r) => sum + r.grade, 0) / ratings.length : null;
-      return { sendCount: sendCount ?? 0, avgDifficulty: avg };
+
+      const counts = new Map<RouteGrade, number>();
+      for (const r of ratings ?? []) {
+        const g = gradeFromRatingValue(r.grade);
+        counts.set(g, (counts.get(g) ?? 0) + 1);
+      }
+      const ratingDistribution = GRADE_ORDER.filter((g) => counts.has(g)).map((grade) => ({
+        grade,
+        count: counts.get(grade)!,
+      }));
+
+      return {
+        sendCount: sendCount ?? 0,
+        avgDifficulty: avg,
+        communityGrade: avg != null ? gradeFromRatingValue(avg) : null,
+        ratingCount: ratings?.length ?? 0,
+        ratingDistribution,
+      };
     },
   });
 
