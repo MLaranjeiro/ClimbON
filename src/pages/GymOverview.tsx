@@ -138,15 +138,17 @@ export function GymOverview() {
               className="w-40 shrink-0 rounded-lg -m-2 p-2 hover:bg-gray-50 transition-colors"
               title="View grade breakdown"
             >
-              <ResponsiveContainer width="100%" height={44}>
-                <BarChart data={gradeMix}>
-                  <Bar dataKey="count" radius={[2, 2, 0, 0]}>
-                    {gradeMix.map((row) => (
-                      <Cell key={row.grade} fill={getGradeColorHex(row.grade)} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="pointer-events-none">
+                <ResponsiveContainer width="100%" height={44}>
+                  <BarChart data={gradeMix}>
+                    <Bar dataKey="count" radius={[2, 2, 0, 0]}>
+                      {gradeMix.map((row) => (
+                        <Cell key={row.grade} fill={getGradeColorHex(row.grade)} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
               <p className="text-[10px] text-gray-500 uppercase tracking-wide text-center mt-1">
                 Grade mix · {gradeMix[0].grade}–{gradeMix[gradeMix.length - 1].grade}
               </p>
