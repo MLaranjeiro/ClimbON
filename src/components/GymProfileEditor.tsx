@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ImagePlus, Loader2, X } from 'lucide-react';
 import { useRef, useState, type ChangeEvent, type FormEvent, type MouseEvent } from 'react';
-import { getGradeColorHex } from '../lib/grades';
+import { GRADE_SWATCH_BORDER, getGradeColorHex, getGradePinBorderHex } from '../lib/grades';
 import { GYM_AMENITIES } from '../lib/gymAmenities';
 import { supabase } from '../lib/supabase';
 import type { Gym, RouteGrade } from '../types';
@@ -515,8 +515,13 @@ export function GymProfileEditor({ gymId }: { gymId: number }) {
                 .map((r) => (
                   <div
                     key={r.id}
-                    className="absolute -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full border-2 border-white shadow pointer-events-none"
-                    style={{ left: `${r.map_x}%`, top: `${r.map_y}%`, backgroundColor: getGradeColorHex(r.grade) }}
+                    className="absolute -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full border-2 shadow pointer-events-none"
+                    style={{
+                      left: `${r.map_x}%`,
+                      top: `${r.map_y}%`,
+                      backgroundColor: getGradeColorHex(r.grade),
+                      borderColor: getGradePinBorderHex(r.grade),
+                    }}
                     title={`${r.route_name} (${r.grade})`}
                   />
                 ))}
@@ -559,8 +564,8 @@ export function GymProfileEditor({ gymId }: { gymId: number }) {
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <span
-                            className="w-2.5 h-2.5 rounded-full shrink-0"
-                            style={{ backgroundColor: getGradeColorHex(r.grade) }}
+                            className="w-2.5 h-2.5 rounded-full shrink-0 border"
+                            style={{ backgroundColor: getGradeColorHex(r.grade), borderColor: GRADE_SWATCH_BORDER }}
                           />
                           <div className="min-w-0">
                             <p className="text-sm font-medium text-gray-900 truncate">{r.route_name}</p>

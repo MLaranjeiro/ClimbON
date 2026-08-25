@@ -9,7 +9,7 @@ import { InfoModal } from '../components/InfoModal';
 import { RouteDetailModal } from '../components/RouteDetailModal';
 import { WallDirectoryList } from '../components/WallDirectoryList';
 import { useGymBySlug } from '../hooks/useGymBySlug';
-import { compareGrades, GRADE_ORDER, getGradeColorHex } from '../lib/grades';
+import { compareGrades, GRADE_ORDER, GRADE_SWATCH_BORDER, getGradeColorHex } from '../lib/grades';
 import { supabase } from '../lib/supabase';
 import type { RouteGrade, Section } from '../types';
 
@@ -177,7 +177,7 @@ export function GymOverview() {
                   <BarChart data={gradeMix}>
                     <Bar dataKey="count" radius={[4, 4, 4, 4]}>
                       {gradeMix.map((row) => (
-                        <Cell key={row.grade} fill={getGradeColorHex(row.grade)} />
+                        <Cell key={row.grade} fill={getGradeColorHex(row.grade)} stroke={GRADE_SWATCH_BORDER} />
                       ))}
                     </Bar>
                   </BarChart>

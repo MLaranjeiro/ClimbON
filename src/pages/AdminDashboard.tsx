@@ -1,10 +1,21 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle, ImagePlus, Loader2, Pencil, Plus, Trash2, XCircle } from 'lucide-react';
-import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import {
+  CheckCircle,
+  ChevronDown,
+  ChevronsUpDown,
+  ChevronUp,
+  ImagePlus,
+  Loader2,
+  Pencil,
+  Plus,
+  Trash2,
+  XCircle,
+} from 'lucide-react';
+import { useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Avatar } from '../components/Avatar';
 import { ErrorAlert } from '../components/ErrorAlert';
 import { useAuth } from '../context/auth';
-import { GRADE_ORDER, getGradeBadgeClasses } from '../lib/grades';
+import { compareGrades, GRADE_ORDER, getGradeBadgeClasses } from '../lib/grades';
 import { isGymAdmin } from '../lib/permissions';
 import { ROUTE_STYLES } from '../lib/routeStyles';
 import { supabase } from '../lib/supabase';
@@ -63,6 +74,7 @@ const EMPTY_FORM: RouteFormState = {
 };
 
 type Tab = 'routes' | 'team';
+type SortColumn = 'section' | 'grade' | 'status';
 
 export function AdminDashboard() {
   const { user, profile, gymMemberships, refreshProfile } = useAuth();
@@ -105,6 +117,32 @@ export function AdminDashboard() {
       return data as unknown as RouteRow[];
     },
   });
+
+  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  function toggleSort(column: SortColumn) {
+    if (sortColumn === column) {
+      setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  }
+
+  const sortedRoutes = useMemo(() => {
+    if (!routes || !sortColumn) return routes ?? [];
+    const direction = sortDirection === 'asc' ? 1 : -1;
+    return [...routes].sort((a, b) => {
+      if (sortColumn === 'section') {
+        return direction * (a.section?.section_name ?? '').localeCompare(b.section?.section_name ?? '');
+      }
+      if (sortColumn === 'grade') {
+        return direction * compareGrades(a.grade, b.grade);
+      }
+      return direction * a.status.localeCompare(b.status);
+    });
+  }, [routes, sortColumn, sortDirection]);
 
   const { data: team, isLoading: teamLoading } = useQuery({
     queryKey: ['gym-team', effectiveGymId],
@@ -402,14 +440,65 @@ export function AdminDashboard() {
                 <tr className="border-b border-gray-200 text-left text-gray-500">
                   <th className="px-5 py-3 font-medium">Route</th>
                   <th className="px-5 py-3 font-medium">Gym</th>
-                  <th className="px-5 py-3 font-medium">Section</th>
-                  <th className="px-5 py-3 font-medium">Grade</th>
-                  <th className="px-5 py-3 font-medium">Status</th>
+                  <th className="px-5 py-3 font-medium">
+                    <button
+                      type="button"
+                      onClick={() => toggleSort('section')}
+                      className="flex items-center gap-1 hover:text-gray-900"
+                    >
+                      Section
+                      {sortColumn === 'section' ? (
+                        sortDirection === 'asc' ? (
+                          <ChevronUp className="w-3.5 h-3.5" />
+                        ) : (
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        )
+                      ) : (
+                        <ChevronsUpDown className="w-3.5 h-3.5 text-gray-300" />
+                      )}
+                    </button>
+                  </th>
+                  <th className="px-5 py-3 font-medium">
+                    <button
+                      type="button"
+                      onClick={() => toggleSort('grade')}
+                      className="flex items-center gap-1 hover:text-gray-900"
+                    >
+                      Grade
+                      {sortColumn === 'grade' ? (
+                        sortDirection === 'asc' ? (
+                          <ChevronUp className="w-3.5 h-3.5" />
+                        ) : (
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        )
+                      ) : (
+                        <ChevronsUpDown className="w-3.5 h-3.5 text-gray-300" />
+                      )}
+                    </button>
+                  </th>
+                  <th className="px-5 py-3 font-medium">
+                    <button
+                      type="button"
+                      onClick={() => toggleSort('status')}
+                      className="flex items-center gap-1 hover:text-gray-900"
+                    >
+                      Status
+                      {sortColumn === 'status' ? (
+                        sortDirection === 'asc' ? (
+                          <ChevronUp className="w-3.5 h-3.5" />
+                        ) : (
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        )
+                      ) : (
+                        <ChevronsUpDown className="w-3.5 h-3.5 text-gray-300" />
+                      )}
+                    </button>
+                  </th>
                   <th className="px-5 py-3 font-medium text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {routes.map((route) => (
+                {sortedRoutes.map((route) => (
                   <tr key={route.id}>
                     <td className="px-5 py-3 font-medium text-gray-900">{route.route_name}</td>
                     <td className="px-5 py-3 text-gray-600">{route.gym?.gym_name ?? '—'}</td>

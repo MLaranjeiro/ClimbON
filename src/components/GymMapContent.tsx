@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import { compareGrades, getGradeColorHex } from '../lib/grades';
+import { compareGrades, getGradeColorHex, getGradePinBorderHex } from '../lib/grades';
 import { supabase } from '../lib/supabase';
 import type { Gym, RouteGrade } from '../types';
 import { GymMapViewer } from './GymMapViewer';
@@ -96,8 +96,13 @@ export function GymMapContent({ gymId }: { gymId: number }) {
               key={r.id}
               type="button"
               onClick={() => setSelectedRouteId(r.id)}
-              className="absolute -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-white shadow"
-              style={{ left: `${r.map_x}%`, top: `${r.map_y}%`, backgroundColor: getGradeColorHex(r.grade) }}
+              className="absolute -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 shadow"
+              style={{
+                left: `${r.map_x}%`,
+                top: `${r.map_y}%`,
+                backgroundColor: getGradeColorHex(r.grade),
+                borderColor: getGradePinBorderHex(r.grade),
+              }}
               title={`${r.route_name} (${r.grade})`}
             />
           ))}

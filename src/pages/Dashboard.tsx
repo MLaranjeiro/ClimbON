@@ -15,7 +15,14 @@ import {
 } from 'lucide-react';
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from '../context/auth';
-import { GRADE_ORDER, getGradeBadgeClasses, getGradeColorHex, getHighestGrade, meetsGrade } from '../lib/grades';
+import {
+  GRADE_ORDER,
+  GRADE_SWATCH_BORDER,
+  getGradeBadgeClasses,
+  getGradeColorHex,
+  getHighestGrade,
+  meetsGrade,
+} from '../lib/grades';
 import { supabase } from '../lib/supabase';
 import type { RouteGrade } from '../types';
 
@@ -367,7 +374,7 @@ export function Dashboard() {
                   />
                   <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                     {climbsPerGrade.map((row) => (
-                      <Cell key={row.grade} fill={getGradeColorHex(row.grade)} />
+                      <Cell key={row.grade} fill={getGradeColorHex(row.grade)} stroke={GRADE_SWATCH_BORDER} />
                     ))}
                   </Bar>
                 </BarChart>

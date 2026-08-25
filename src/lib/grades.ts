@@ -1,9 +1,6 @@
 import type { RouteGrade } from '../types';
 
-export const GRADE_ORDER: RouteGrade[] = [
-  'VB', 'V0', 'V1', 'V2', 'V3', 'V4', 'V5',
-  'V6', 'V7', 'V8', 'V9', 'V10', 'V11', 'V12',
-];
+export const GRADE_ORDER: RouteGrade[] = ['V0', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V9', 'V10'];
 
 export function compareGrades(a: RouteGrade, b: RouteGrade): number {
   return GRADE_ORDER.indexOf(a) - GRADE_ORDER.indexOf(b);
@@ -15,15 +12,29 @@ export function getHighestGrade(grades: RouteGrade[]): RouteGrade | null {
 }
 
 const GRADE_BUCKETS: { grades: RouteGrade[]; hex: string; badge: string }[] = [
-  { grades: ['VB', 'V0', 'V1'], hex: '#16a34a', badge: 'bg-green-100 text-green-700' },
-  { grades: ['V2', 'V3', 'V4'], hex: '#2563eb', badge: 'bg-blue-100 text-blue-700' },
-  { grades: ['V5', 'V6', 'V7'], hex: '#7c3aed', badge: 'bg-violet-100 text-violet-700' },
-  { grades: ['V8', 'V9', 'V10'], hex: '#ea580c', badge: 'bg-orange-100 text-orange-700' },
-  { grades: ['V11', 'V12'], hex: '#dc2626', badge: 'bg-red-100 text-red-700' },
+  { grades: ['V0'], hex: '#ffffff', badge: 'bg-white text-gray-700 border border-gray-300' },
+  { grades: ['V1'], hex: '#eab308', badge: 'bg-yellow-100 text-yellow-800' },
+  { grades: ['V2'], hex: '#f97316', badge: 'bg-orange-100 text-orange-700' },
+  { grades: ['V3'], hex: '#16a34a', badge: 'bg-green-100 text-green-700' },
+  { grades: ['V4'], hex: '#2563eb', badge: 'bg-blue-100 text-blue-700' },
+  { grades: ['V5', 'V6'], hex: '#9333ea', badge: 'bg-purple-100 text-purple-700' },
+  { grades: ['V7'], hex: '#dc2626', badge: 'bg-red-100 text-red-700' },
+  { grades: ['V8'], hex: '#171717', badge: 'bg-gray-800 text-white' },
+  { grades: ['V9', 'V10'], hex: '#ec4899', badge: 'bg-pink-100 text-pink-700' },
 ];
 
 export function getGradeColorHex(grade: RouteGrade): string {
   return GRADE_BUCKETS.find((b) => b.grades.includes(grade))?.hex ?? '#6b7280';
+}
+
+// Subtle neutral outline for any flat dot/bar/chart-cell rendering of a grade's hex color —
+// without it, the V0 (white) swatch is invisible against the app's white surfaces.
+export const GRADE_SWATCH_BORDER = '#d1d5db';
+
+// For map-pin style dots that already use a white ring to stand out from the map image —
+// keep white for every color except V0, where white would disappear entirely.
+export function getGradePinBorderHex(grade: RouteGrade): string {
+  return grade === 'V0' ? GRADE_SWATCH_BORDER : '#ffffff';
 }
 
 export function getGradeBadgeClasses(grade: RouteGrade): string {
@@ -35,11 +46,9 @@ export function meetsGrade(grade: RouteGrade | null | undefined, threshold: Rout
   return GRADE_ORDER.indexOf(grade) >= GRADE_ORDER.indexOf(threshold);
 }
 
-// Assumes difficulty_ratings.grade stores the plain V-number (V0 = 0, V1 = 1, … V12 = 12),
-// with anything below 0 treated as VB.
+// Assumes difficulty_ratings.grade stores the plain V-number (V0 = 0, V1 = 1, … V10 = 10),
+// clamped to the V0–V10 range.
 export function gradeFromRatingValue(value: number): RouteGrade {
-  const vNumber = Math.round(value);
-  if (vNumber < 0) return 'VB';
-  const idx = Math.min(vNumber + 1, GRADE_ORDER.length - 1);
+  const idx = Math.min(Math.max(Math.round(value), 0), GRADE_ORDER.length - 1);
   return GRADE_ORDER[idx];
 }

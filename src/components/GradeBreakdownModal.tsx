@@ -1,4 +1,4 @@
-import { getGradeColorHex } from '../lib/grades';
+import { GRADE_SWATCH_BORDER, getGradeColorHex } from '../lib/grades';
 import type { RouteGrade } from '../types';
 import { ModalShell } from './ModalShell';
 
@@ -27,8 +27,12 @@ export function GradeBreakdownModal({ gradeMix, totalClimbs, onClose }: GradeBre
             <span className="w-10 text-sm font-semibold text-gray-900 shrink-0">{row.grade}</span>
             <div className="flex-1 h-2.5 rounded-full bg-gray-100 overflow-hidden">
               <div
-                className="h-full rounded-full"
-                style={{ width: `${(row.count / maxCount) * 100}%`, backgroundColor: getGradeColorHex(row.grade) }}
+                className="h-full rounded-full border"
+                style={{
+                  width: `${(row.count / maxCount) * 100}%`,
+                  backgroundColor: getGradeColorHex(row.grade),
+                  borderColor: GRADE_SWATCH_BORDER,
+                }}
               />
             </div>
             <span className="w-6 text-sm font-semibold text-gray-900 text-right shrink-0">{row.count}</span>

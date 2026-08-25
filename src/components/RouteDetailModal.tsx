@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Avatar } from '../components/Avatar';
 import { useRouteDetail } from '../hooks/useRouteDetail';
-import { getGradeBadgeClasses, getGradeColorHex } from '../lib/grades';
+import { GRADE_SWATCH_BORDER, getGradeBadgeClasses, getGradeColorHex } from '../lib/grades';
 import type { RouteGrade } from '../types';
 
 interface SiblingRoute {
@@ -60,10 +60,10 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
                         key={sibling.id}
                         type="button"
                         onClick={() => goTo(i)}
-                        className={`w-5 h-5 rounded-full shrink-0 ${
+                        className={`w-5 h-5 rounded-full shrink-0 border ${
                           i === currentIndex ? 'ring-2 ring-offset-1 ring-gray-900' : ''
                         }`}
-                        style={{ backgroundColor: getGradeColorHex(sibling.grade) }}
+                        style={{ backgroundColor: getGradeColorHex(sibling.grade), borderColor: GRADE_SWATCH_BORDER }}
                         title={sibling.grade}
                       />
                     ))}
@@ -114,8 +114,8 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
                   )}
                   <span className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-full bg-white/95 px-2 py-1 text-xs font-semibold text-gray-900">
                     <span
-                      className="w-2.5 h-2.5 rounded-full"
-                      style={{ backgroundColor: getGradeColorHex(route.grade) }}
+                      className="w-2.5 h-2.5 rounded-full border"
+                      style={{ backgroundColor: getGradeColorHex(route.grade), borderColor: GRADE_SWATCH_BORDER }}
                     />
                     {route.grade}
                   </span>
@@ -172,10 +172,11 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
                               <span className="w-8 text-xs font-semibold text-gray-900 shrink-0">{row.grade}</span>
                               <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
                                 <div
-                                  className="h-full rounded-full"
+                                  className="h-full rounded-full border"
                                   style={{
                                     width: `${(row.count / maxCount) * 100}%`,
                                     backgroundColor: getGradeColorHex(row.grade),
+                                    borderColor: GRADE_SWATCH_BORDER,
                                   }}
                                 />
                               </div>
