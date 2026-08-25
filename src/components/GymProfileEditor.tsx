@@ -1,14 +1,22 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ImagePlus, Loader2, MapPin, X } from 'lucide-react';
+import { ImagePlus, Loader2, X } from 'lucide-react';
 import { useRef, useState, type ChangeEvent, type FormEvent, type MouseEvent } from 'react';
+import { getGradeColorHex } from '../lib/grades';
 import { GYM_AMENITIES } from '../lib/gymAmenities';
 import { supabase } from '../lib/supabase';
-import type { Gym } from '../types';
+import type { Gym, RouteGrade } from '../types';
 import { ErrorAlert } from './ErrorAlert';
 
 interface GymSectionRow {
   id: number;
   section_name: string;
+}
+
+interface GymRouteRow {
+  id: number;
+  route_name: string;
+  grade: RouteGrade;
+  section_id: number | null;
   map_x: number | null;
   map_y: number | null;
 }
@@ -53,16 +61,30 @@ export function GymProfileEditor({ gymId }: { gymId: number }) {
     },
   });
 
-  const { data: sections, isLoading: sectionsLoading } = useQuery({
+  const { data: sections } = useQuery({
     queryKey: ['gym-sections-full', gymId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('sections')
-        .select('id, section_name, map_x, map_y')
+        .select('id, section_name')
         .eq('gym_id', gymId)
         .order('section_name');
       if (error) throw error;
       return data as GymSectionRow[];
+    },
+  });
+
+  const { data: mapRoutes, isLoading: mapRoutesLoading } = useQuery({
+    queryKey: ['gym-routes-full', gymId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('routes')
+        .select('id, route_name, grade, section_id, map_x, map_y')
+        .eq('gym_id', gymId)
+        .eq('status', 'active')
+        .order('route_name');
+      if (error) throw error;
+      return data as GymRouteRow[];
     },
   });
 
@@ -85,8 +107,10 @@ export function GymProfileEditor({ gymId }: { gymId: number }) {
   const [mapError, setMapError] = useState<string | null>(null);
   const mapInputRef = useRef<HTMLInputElement>(null);
 
-  const [placingSectionId, setPlacingSectionId] = useState<number | null>(null);
+  const [placingRouteId, setPlacingRouteId] = useState<number | null>(null);
   const [placeError, setPlaceError] = useState<string | null>(null);
+  const [routeWallFilter, setRouteWallFilter] = useState<number | null>(null);
+  const [routeSearch, setRouteSearch] = useState('');
 
   function updateForm(patch: Partial<GymFormState>) {
     setForm({ ...(activeForm as GymFormState), ...patch });
@@ -188,28 +212,28 @@ export function GymProfileEditor({ gymId }: { gymId: number }) {
     await queryClient.invalidateQueries({ queryKey: ['gyms'] });
   }
 
-  async function placeSection(e: MouseEvent<HTMLImageElement>) {
-    if (placingSectionId == null) return;
+  async function placeOnMap(e: MouseEvent<HTMLImageElement>) {
+    if (placingRouteId == null) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = Math.min(100, Math.max(0, ((e.clientX - rect.left) / rect.width) * 100));
     const y = Math.min(100, Math.max(0, ((e.clientY - rect.top) / rect.height) * 100));
 
     setPlaceError(null);
-    const { error } = await supabase.from('sections').update({ map_x: x, map_y: y }).eq('id', placingSectionId);
-    setPlacingSectionId(null);
+    const { error } = await supabase.from('routes').update({ map_x: x, map_y: y }).eq('id', placingRouteId);
+    setPlacingRouteId(null);
 
     if (error) {
       setPlaceError(error.message);
       return;
     }
 
-    await queryClient.invalidateQueries({ queryKey: ['gym-sections-full', gymId] });
+    await queryClient.invalidateQueries({ queryKey: ['gym-routes-full', gymId] });
   }
 
-  async function clearSectionPosition(sectionId: number) {
-    const { error } = await supabase.from('sections').update({ map_x: null, map_y: null }).eq('id', sectionId);
+  async function clearPosition(id: number) {
+    const { error } = await supabase.from('routes').update({ map_x: null, map_y: null }).eq('id', id);
     if (!error) {
-      await queryClient.invalidateQueries({ queryKey: ['gym-sections-full', gymId] });
+      await queryClient.invalidateQueries({ queryKey: ['gym-routes-full', gymId] });
     }
   }
 
@@ -466,9 +490,10 @@ export function GymProfileEditor({ gymId }: { gymId: number }) {
 
       {activeForm.mapImageUrl && (
         <section className="card-light">
-          <h2 className="text-lg font-bold text-gray-900 mb-1">Place sections on the map</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-1">Place routes on the map</h2>
           <p className="text-sm text-gray-500 mb-4">
-            Click "Place on map" next to a section, then click the map where that section is.
+            Walls are already labeled in the map image itself — pick a wall, then click "Place on map" next to a
+            route and click the map where it is.
           </p>
           {placeError && (
             <div className="mb-3">
@@ -480,62 +505,95 @@ export function GymProfileEditor({ gymId }: { gymId: number }) {
               <img
                 src={activeForm.mapImageUrl}
                 alt=""
-                onClick={placeSection}
+                onClick={placeOnMap}
                 className={`w-full rounded-lg border border-gray-200 ${
-                  placingSectionId != null ? 'cursor-crosshair' : ''
+                  placingRouteId != null ? 'cursor-crosshair' : ''
                 }`}
               />
-              {(sections ?? [])
-                .filter((s) => s.map_x != null && s.map_y != null)
-                .map((s) => (
+              {(mapRoutes ?? [])
+                .filter((r) => r.map_x != null && r.map_y != null)
+                .map((r) => (
                   <div
-                    key={s.id}
-                    className="absolute -translate-x-1/2 -translate-y-1/2 badge bg-gray-900/85 text-white flex items-center gap-1 pointer-events-none"
-                    style={{ left: `${s.map_x}%`, top: `${s.map_y}%` }}
-                  >
-                    <MapPin className="w-3 h-3" />
-                    {s.section_name}
-                  </div>
+                    key={r.id}
+                    className="absolute -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full border-2 border-white shadow pointer-events-none"
+                    style={{ left: `${r.map_x}%`, top: `${r.map_y}%`, backgroundColor: getGradeColorHex(r.grade) }}
+                    title={`${r.route_name} (${r.grade})`}
+                  />
                 ))}
             </div>
             <div className="space-y-2">
-              {sectionsLoading ? (
-                <p className="text-sm text-gray-500">Loading…</p>
-              ) : !sections || sections.length === 0 ? (
-                <p className="text-sm text-gray-500">No sections yet.</p>
-              ) : (
-                sections.map((s) => (
-                  <div
-                    key={s.id}
-                    className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 px-3 py-2"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{s.section_name}</p>
-                      <p className="text-xs text-gray-500">{s.map_x != null ? 'Placed' : 'Not placed'}</p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setPlacingSectionId(s.id)}
-                        className={`text-xs font-medium ${
-                          placingSectionId === s.id ? 'text-brand-600' : 'text-gray-500 hover:text-brand-600'
-                        }`}
+              <select
+                className="input-field-light text-sm"
+                value={routeWallFilter ?? ''}
+                onChange={(e) => setRouteWallFilter(e.target.value ? Number(e.target.value) : null)}
+              >
+                <option value="">All walls</option>
+                {(sections ?? []).map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.section_name}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="text"
+                className="input-field-light text-sm"
+                placeholder="Search routes…"
+                value={routeSearch}
+                onChange={(e) => setRouteSearch(e.target.value)}
+              />
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {mapRoutesLoading ? (
+                  <p className="text-sm text-gray-500">Loading…</p>
+                ) : (
+                  (() => {
+                    const filtered = (mapRoutes ?? [])
+                      .filter((r) => routeWallFilter == null || r.section_id === routeWallFilter)
+                      .filter((r) => r.route_name.toLowerCase().includes(routeSearch.toLowerCase()));
+                    if (filtered.length === 0) {
+                      return <p className="text-sm text-gray-500">No routes match.</p>;
+                    }
+                    return filtered.map((r) => (
+                      <div
+                        key={r.id}
+                        className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 px-3 py-2"
                       >
-                        {placingSectionId === s.id ? 'Click the map…' : 'Place on map'}
-                      </button>
-                      {s.map_x != null && (
-                        <button
-                          type="button"
-                          onClick={() => clearSectionPosition(s.id)}
-                          className="text-xs font-medium text-gray-500 hover:text-red-600"
-                        >
-                          Clear
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: getGradeColorHex(r.grade) }}
+                          />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{r.route_name}</p>
+                            <p className="text-xs text-gray-500">
+                              {r.grade} · {r.map_x != null ? 'Placed' : 'Not placed'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setPlacingRouteId(r.id)}
+                            className={`text-xs font-medium ${
+                              placingRouteId === r.id ? 'text-brand-600' : 'text-gray-500 hover:text-brand-600'
+                            }`}
+                          >
+                            {placingRouteId === r.id ? 'Click the map…' : 'Place on map'}
+                          </button>
+                          {r.map_x != null && (
+                            <button
+                              type="button"
+                              onClick={() => clearPosition(r.id)}
+                              className="text-xs font-medium text-gray-500 hover:text-red-600"
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ));
+                  })()
+                )}
+              </div>
             </div>
           </div>
         </section>
