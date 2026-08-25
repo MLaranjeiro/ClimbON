@@ -124,7 +124,7 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="rounded-lg border border-gray-200 p-3 text-center">
                     <div className="text-lg font-bold text-gray-900">{route.grade}</div>
-                    <div className="text-xs text-gray-500">Official grade</div>
+                    <div className="text-xs text-gray-500">Gym grade</div>
                   </div>
                   <div className="rounded-lg border border-gray-200 p-3 text-center">
                     <div className="text-lg font-bold text-gray-900">{stats?.communityGrade ?? '—'}</div>
