@@ -77,6 +77,8 @@ export interface Route {
   description: string | null;
   image_url: string | null;
   styles: string[];
+  map_x: number | null;
+  map_y: number | null;
   created_by: string;
   created_at: string;
   gym?: Gym;
