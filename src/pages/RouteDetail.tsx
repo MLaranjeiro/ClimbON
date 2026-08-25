@@ -1,76 +1,14 @@
-import { useQuery } from '@tanstack/react-query';
 import { CheckCircle, MessageSquare, Mountain } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
+import { useRouteDetail } from '../hooks/useRouteDetail';
 import { getGradeBadgeClasses } from '../lib/grades';
-import { supabase } from '../lib/supabase';
-import type { RouteGrade, RouteStatus } from '../types';
-
-interface RouteDetailRow {
-  id: number;
-  route_name: string;
-  grade: RouteGrade;
-  status: RouteStatus;
-  description: string | null;
-  image_url: string | null;
-  styles: string[];
-  gym_id: number;
-  gym: { gym_name: string } | null;
-  section: { section_name: string } | null;
-}
-
-interface BetaRow {
-  id: number;
-  description_text: string | null;
-  video_url: string | null;
-  created_at: string;
-  profile: { username: string; avatar_url: string | null } | null;
-}
 
 export function RouteDetail() {
   const { gymId, routeId } = useParams();
   const id = Number(routeId);
 
-  const { data: route, isLoading } = useQuery({
-    queryKey: ['route', id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('routes')
-        .select(
-          'id, route_name, grade, status, description, image_url, styles, gym_id, gym:gyms(gym_name), section:sections(section_name)',
-        )
-        .eq('id', id)
-        .single();
-      if (error) throw error;
-      return data as unknown as RouteDetailRow;
-    },
-  });
-
-  const { data: beta } = useQuery({
-    queryKey: ['route-beta', id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('beta')
-        .select('id, description_text, video_url, created_at, profile:profiles(username, avatar_url)')
-        .eq('route_id', id)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data as unknown as BetaRow[];
-    },
-  });
-
-  const { data: stats } = useQuery({
-    queryKey: ['route-stats', id],
-    queryFn: async () => {
-      const [{ count: sendCount }, { data: ratings }] = await Promise.all([
-        supabase.from('sends').select('id', { count: 'exact', head: true }).eq('route_id', id),
-        supabase.from('difficulty_ratings').select('grade').eq('route_id', id),
-      ]);
-      const avg =
-        ratings && ratings.length > 0 ? ratings.reduce((sum, r) => sum + r.grade, 0) / ratings.length : null;
-      return { sendCount: sendCount ?? 0, avgDifficulty: avg };
-    },
-  });
+  const { route, isLoading, beta, stats } = useRouteDetail(id);
 
   if (isLoading) return <p className="text-gray-500 text-sm">Loading…</p>;
   if (!route) return <p className="text-gray-500 text-sm">Route not found.</p>;
