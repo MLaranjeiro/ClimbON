@@ -15,7 +15,6 @@ interface RouteRow {
   route_name: string;
   grade: RouteGrade;
   status: RouteStatus;
-  description: string | null;
   image_url: string | null;
   styles: string[];
   gym_id: number;
@@ -49,7 +48,6 @@ interface RouteFormState {
   sectionId: string;
   grade: RouteGrade;
   status: RouteStatus;
-  description: string;
   imageUrl: string;
   styles: string[];
 }
@@ -60,7 +58,6 @@ const EMPTY_FORM: RouteFormState = {
   sectionId: '',
   grade: 'V0',
   status: 'active',
-  description: '',
   imageUrl: '',
   styles: [],
 };
@@ -100,7 +97,7 @@ export function AdminDashboard() {
       const { data, error } = await supabase
         .from('routes')
         .select(
-          'id, route_name, grade, status, description, image_url, styles, gym_id, section_id, gym:gyms(gym_name), section:sections(section_name)',
+          'id, route_name, grade, status, image_url, styles, gym_id, section_id, gym:gyms(gym_name), section:sections(section_name)',
         )
         .eq('gym_id', effectiveGymId as number)
         .order('route_name');
@@ -210,7 +207,6 @@ export function AdminDashboard() {
       sectionId: route.section_id ? String(route.section_id) : '',
       grade: route.grade,
       status: route.status,
-      description: route.description ?? '',
       imageUrl: route.image_url ?? '',
       styles: route.styles,
     });
@@ -269,7 +265,6 @@ export function AdminDashboard() {
       section_id: form.sectionId ? Number(form.sectionId) : null,
       grade: form.grade,
       status: form.status,
-      description: form.description.trim() || null,
       image_url: form.imageUrl || null,
       styles: form.styles,
     };
@@ -717,19 +712,6 @@ export function AdminDashboard() {
                     </select>
                   </div>
                 )}
-              </div>
-
-              <div>
-                <label htmlFor="description" className="block text-sm text-gray-600 mb-1">
-                  Description
-                </label>
-                <textarea
-                  id="description"
-                  className="input-field-light min-h-28"
-                  value={form.description}
-                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                  placeholder="Describe the route, holds, cruxes, and beta."
-                />
               </div>
 
               <div>
