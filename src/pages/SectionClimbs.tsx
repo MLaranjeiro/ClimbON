@@ -3,6 +3,7 @@ import { Search } from 'lucide-react';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { RouteRow } from '../components/RouteRow';
+import { useGymBySlug } from '../hooks/useGymBySlug';
 import { supabase } from '../lib/supabase';
 import type { RouteGrade, Section } from '../types';
 
@@ -15,17 +16,20 @@ interface SectionRoute {
 }
 
 export function SectionClimbs() {
-  const { gymId, sectionId } = useParams();
-  const id = Number(gymId);
+  const { gymSlug, sectionId } = useParams();
   const [query, setQuery] = useState('');
+
+  const { data: gym } = useGymBySlug(gymSlug);
+  const id = gym?.id;
 
   const { data: sections } = useQuery({
     queryKey: ['gym-sections', id],
+    enabled: id != null,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('sections')
         .select('id, section_name, map_x, map_y, created_at')
-        .eq('gym_id', id);
+        .eq('gym_id', id!);
       if (error) throw error;
       return data as Section[];
     },
@@ -33,11 +37,12 @@ export function SectionClimbs() {
 
   const { data: routes, isLoading } = useQuery({
     queryKey: ['gym-routes', id],
+    enabled: id != null,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('routes')
         .select('id, route_name, grade, styles, section_id')
-        .eq('gym_id', id)
+        .eq('gym_id', id!)
         .eq('status', 'active')
         .order('route_name');
       if (error) throw error;
@@ -88,7 +93,7 @@ export function SectionClimbs() {
       ) : (
         <div className="space-y-2">
           {visible.map((route) => (
-            <RouteRow key={route.id} gymId={id} route={route} />
+            <RouteRow key={route.id} gymSlug={gymSlug!} route={route} />
           ))}
         </div>
       )}

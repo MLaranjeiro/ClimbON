@@ -5,7 +5,7 @@ import { useRouteDetail } from '../hooks/useRouteDetail';
 import { getGradeBadgeClasses } from '../lib/grades';
 
 export function RouteDetail() {
-  const { gymId, routeId } = useParams();
+  const { gymSlug, routeId } = useParams();
   const id = Number(routeId);
 
   const { route, isLoading, beta, stats } = useRouteDetail(id);
@@ -16,7 +16,7 @@ export function RouteDetail() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <Link to={`/routes/${gymId}`} className="text-sm text-brand-600 hover:underline">
+        <Link to={`/routes/${gymSlug}`} className="text-sm text-brand-600 hover:underline">
           {route.gym?.gym_name ?? 'Gym'}
         </Link>
         {route.section && <span className="text-sm text-gray-400"> · {route.section.section_name}</span>}

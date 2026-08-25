@@ -8,9 +8,10 @@ import { GymMapModal } from '../components/GymMapModal';
 import { InfoModal } from '../components/InfoModal';
 import { RouteRow } from '../components/RouteRow';
 import { WallDirectoryList } from '../components/WallDirectoryList';
+import { useGymBySlug } from '../hooks/useGymBySlug';
 import { GRADE_ORDER, getGradeColorHex } from '../lib/grades';
 import { supabase } from '../lib/supabase';
-import type { Gym, RouteGrade, Section } from '../types';
+import type { RouteGrade, Section } from '../types';
 
 interface OverviewRoute {
   id: number;
@@ -32,29 +33,23 @@ function daysAgo(dateStr: string) {
 }
 
 export function GymOverview() {
-  const { gymId } = useParams();
-  const id = Number(gymId);
+  const { gymSlug } = useParams();
   const [query, setQuery] = useState('');
   const [showMap, setShowMap] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const [showGradeBreakdown, setShowGradeBreakdown] = useState(false);
 
-  const { data: gym, isLoading: gymLoading } = useQuery({
-    queryKey: ['gym', id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('gyms').select('*').eq('id', id).single();
-      if (error) throw error;
-      return data as Gym;
-    },
-  });
+  const { data: gym, isLoading: gymLoading } = useGymBySlug(gymSlug);
+  const id = gym?.id;
 
   const { data: sections } = useQuery({
     queryKey: ['gym-sections', id],
+    enabled: id != null,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('sections')
         .select('id, section_name, map_x, map_y, created_at')
-        .eq('gym_id', id);
+        .eq('gym_id', id!);
       if (error) throw error;
       return data as Section[];
     },
@@ -62,11 +57,12 @@ export function GymOverview() {
 
   const { data: routes, isLoading: routesLoading } = useQuery({
     queryKey: ['gym-routes', id],
+    enabled: id != null,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('routes')
         .select('id, route_name, grade, styles, image_url, section_id, created_at')
-        .eq('gym_id', id)
+        .eq('gym_id', id!)
         .eq('status', 'active')
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -205,7 +201,7 @@ export function GymOverview() {
           ) : (
             <div className="space-y-2">
               {searchMatches.map((route) => (
-                <RouteRow key={route.id} gymId={id} route={route} />
+                <RouteRow key={route.id} gymSlug={gym.slug} route={route} />
               ))}
             </div>
           )}
@@ -219,7 +215,7 @@ export function GymOverview() {
                 {freshSections.map(({ section, latestCreatedAt }) => (
                   <Link
                     key={section.id}
-                    to={`/routes/${id}/sections/${section.id}`}
+                    to={`/routes/${gym.slug}/sections/${section.id}`}
                     className="card-light hover:border-gray-300 transition-colors"
                   >
                     <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">
@@ -237,14 +233,14 @@ export function GymOverview() {
             {routesLoading ? (
               <p className="text-gray-500 text-sm">Loading…</p>
             ) : (
-              <WallDirectoryList gymId={id} sections={sectionList} routes={routeList} />
+              <WallDirectoryList gymSlug={gym.slug} sections={sectionList} routes={routeList} />
             )}
           </section>
         </>
       )}
 
-      {showMap && <GymMapModal gymId={id} onClose={() => setShowMap(false)} />}
-      {showInfo && <InfoModal gymId={id} onClose={() => setShowInfo(false)} />}
+      {showMap && <GymMapModal gymId={gym.id} onClose={() => setShowMap(false)} />}
+      {showInfo && <InfoModal gymId={gym.id} onClose={() => setShowInfo(false)} />}
       {showGradeBreakdown && (
         <GradeBreakdownModal
           gradeMix={fullGradeMix}

@@ -12,7 +12,7 @@ interface DirectoryRoute {
 }
 
 interface WallDirectoryListProps {
-  gymId: number;
+  gymSlug: string;
   sections: { id: number; section_name: string }[];
   routes: DirectoryRoute[];
 }
@@ -42,7 +42,7 @@ function buildEntry(id: number | 'none', name: string, sectionRoutes: DirectoryR
   };
 }
 
-export function WallDirectoryList({ gymId, sections, routes }: WallDirectoryListProps) {
+export function WallDirectoryList({ gymSlug, sections, routes }: WallDirectoryListProps) {
   const entries: WallEntry[] = sections.map((s) =>
     buildEntry(
       s.id,
@@ -65,7 +65,7 @@ export function WallDirectoryList({ gymId, sections, routes }: WallDirectoryList
       {entries.map((entry) => (
         <Link
           key={entry.id}
-          to={`/routes/${gymId}/sections/${entry.id}`}
+          to={`/routes/${gymSlug}/sections/${entry.id}`}
           className="group relative h-[145px] sm:h-[220px] overflow-hidden rounded-2xl bg-gray-300 text-white"
         >
           {entry.thumbnail ? (

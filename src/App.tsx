@@ -46,11 +46,11 @@ export default function App() {
               <Route index element={<Dashboard />} />
               <Route path="account" element={<AccountSettings />} />
               <Route path="routes" element={<GymPicker />} />
-              <Route path="routes/:gymId" element={<GymOverview />} />
-              <Route path="routes/:gymId/map" element={<GymMap />} />
-              <Route path="routes/:gymId/about" element={<GymAbout />} />
-              <Route path="routes/:gymId/sections/:sectionId" element={<SectionClimbs />} />
-              <Route path="routes/:gymId/climbs/:routeId" element={<RouteDetail />} />
+              <Route path="routes/:gymSlug" element={<GymOverview />} />
+              <Route path="routes/:gymSlug/map" element={<GymMap />} />
+              <Route path="routes/:gymSlug/about" element={<GymAbout />} />
+              <Route path="routes/:gymSlug/sections/:sectionId" element={<SectionClimbs />} />
+              <Route path="routes/:gymSlug/climbs/:routeId" element={<RouteDetail />} />
               <Route
                 path="admin"
                 element={

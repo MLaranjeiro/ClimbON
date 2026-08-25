@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 interface GymOption {
   id: number;
   gym_name: string;
+  slug: string;
   city: string | null;
   location_address: string | null;
   logo_url: string | null;
@@ -21,7 +22,7 @@ export function GymPicker() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('gyms')
-        .select('id, gym_name, city, location_address, logo_url, cover_image_url')
+        .select('id, gym_name, slug, city, location_address, logo_url, cover_image_url')
         .order('gym_name');
       if (error) throw error;
       return data as GymOption[];
@@ -67,7 +68,7 @@ export function GymPicker() {
           {matches.map((gym) => (
             <Link
               key={gym.id}
-              to={`/routes/${gym.id}`}
+              to={`/routes/${gym.slug}`}
               className="group relative h-[145px] sm:h-[220px] overflow-hidden rounded-2xl bg-gray-300 text-white"
             >
               {gym.cover_image_url ? (

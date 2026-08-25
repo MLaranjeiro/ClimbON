@@ -3,7 +3,7 @@ import { getGradeBadgeClasses } from '../lib/grades';
 import type { RouteGrade } from '../types';
 
 interface RouteRowProps {
-  gymId: number;
+  gymSlug: string;
   route: {
     id: number;
     route_name: string;
@@ -12,10 +12,10 @@ interface RouteRowProps {
   };
 }
 
-export function RouteRow({ gymId, route }: RouteRowProps) {
+export function RouteRow({ gymSlug, route }: RouteRowProps) {
   return (
     <Link
-      to={`/routes/${gymId}/climbs/${route.id}`}
+      to={`/routes/${gymSlug}/climbs/${route.id}`}
       className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 px-4 py-3 hover:border-gray-300 transition-colors"
     >
       <div className="flex items-center gap-3 min-w-0">

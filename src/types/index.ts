@@ -12,6 +12,7 @@ export interface UserProfile {
 export interface Gym {
   id: number;
   gym_name: string;
+  slug: string;
   location_address: string | null;
   city: string | null;
   website: string | null;

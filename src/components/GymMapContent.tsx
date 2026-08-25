@@ -98,7 +98,7 @@ export function GymMapContent({ gymId }: { gymId: number }) {
       ) : (
         <div>
           <p className="text-gray-500 text-sm mb-4">This gym hasn't uploaded a map image yet — here's the wall directory instead.</p>
-          <WallDirectoryList gymId={gymId} sections={sectionList} routes={routeList} />
+          <WallDirectoryList gymSlug={gym.slug} sections={sectionList} routes={routeList} />
         </div>
       )}
 
