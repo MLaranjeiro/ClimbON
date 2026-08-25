@@ -41,7 +41,7 @@ export function GymPicker() {
     <div className="max-w-[1400px] mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 pb-6 border-b border-gray-200">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Routes</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Routes</h1>
           <p className="text-gray-500 mt-1">Choose a gym to start tracking your climbs!</p>
         </div>
 
