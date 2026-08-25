@@ -1,14 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { Info, Map as MapIcon, Search, Sparkles } from 'lucide-react';
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Bar, BarChart, Cell, ResponsiveContainer } from 'recharts';
 import { GradeBreakdownModal } from '../components/GradeBreakdownModal';
 import { GymMapModal } from '../components/GymMapModal';
 import { InfoModal } from '../components/InfoModal';
+import { RouteDetailModal } from '../components/RouteDetailModal';
 import { WallDirectoryList } from '../components/WallDirectoryList';
 import { useGymBySlug } from '../hooks/useGymBySlug';
-import { GRADE_ORDER, getGradeColorHex } from '../lib/grades';
+import { compareGrades, GRADE_ORDER, getGradeColorHex } from '../lib/grades';
 import { supabase } from '../lib/supabase';
 import type { RouteGrade, Section } from '../types';
 
@@ -37,12 +38,14 @@ export function GymOverview() {
   const [showMap, setShowMap] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const [showGradeBreakdown, setShowGradeBreakdown] = useState(false);
+  const [selectedRouteId, setSelectedRouteId] = useState<number | null>(null);
+  const [siblingRoutes, setSiblingRoutes] = useState<{ id: number; grade: RouteGrade }[]>([]);
 
   const { data: gym, isLoading: gymLoading } = useGymBySlug(gymSlug);
   const id = gym?.id;
 
   const { data: sections } = useQuery({
-    queryKey: ['gym-sections', id],
+    queryKey: ['gym-sections-overview', id],
     enabled: id != null,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -55,7 +58,7 @@ export function GymOverview() {
   });
 
   const { data: routes, isLoading: routesLoading } = useQuery({
-    queryKey: ['gym-routes', id],
+    queryKey: ['gym-routes-overview', id],
     enabled: id != null,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -108,6 +111,16 @@ export function GymOverview() {
   const unsectionedRoutes = routeList.filter((r) => r.section_id == null);
   const includeUnsectioned = !q || unsectionedRoutes.some(routeMatches);
   const directoryRoutes = includeUnsectioned ? routeList : routeList.filter((r) => r.section_id != null);
+
+  function openSection(sectionId: number | 'none') {
+    const matches = routeList
+      .filter((r) => (sectionId === 'none' ? r.section_id == null : r.section_id === sectionId))
+      .sort((a, b) => compareGrades(a.grade, b.grade))
+      .map((r) => ({ id: r.id, grade: r.grade }));
+    if (matches.length === 0) return;
+    setSiblingRoutes(matches);
+    setSelectedRouteId(matches[0].id);
+  }
 
   if (gymLoading) {
     return <p className="text-gray-500 text-sm">Loading…</p>;
@@ -207,13 +220,14 @@ export function GymOverview() {
               Fresh sets
             </span>
             {freshSections.map(({ section, latestCreatedAt }) => (
-              <Link
+              <button
                 key={section.id}
-                to={`/routes/${gym.slug}/sections/${section.id}`}
+                type="button"
+                onClick={() => openSection(section.id)}
                 className="badge bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
               >
                 {section.section_name} · {daysAgo(latestCreatedAt)}d
-              </Link>
+              </button>
             ))}
           </div>
         )}
@@ -226,12 +240,20 @@ export function GymOverview() {
         ) : filteredSections.length === 0 && !includeUnsectioned ? (
           <p className="text-gray-500 text-sm">No climbs or walls match "{query}".</p>
         ) : (
-          <WallDirectoryList gymSlug={gym.slug} sections={filteredSections} routes={directoryRoutes} />
+          <WallDirectoryList sections={filteredSections} routes={directoryRoutes} onSelectSection={openSection} />
         )}
       </section>
 
       {showMap && <GymMapModal gymId={gym.id} onClose={() => setShowMap(false)} />}
       {showInfo && <InfoModal gymId={gym.id} onClose={() => setShowInfo(false)} />}
+      {selectedRouteId != null && (
+        <RouteDetailModal
+          routeId={selectedRouteId}
+          siblingRoutes={siblingRoutes}
+          onClose={() => setSelectedRouteId(null)}
+          onNavigate={setSelectedRouteId}
+        />
+      )}
       {showGradeBreakdown && (
         <GradeBreakdownModal
           gradeMix={fullGradeMix}

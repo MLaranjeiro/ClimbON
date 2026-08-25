@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { compareGrades } from '../lib/grades';
 import type { RouteGrade } from '../types';
 
@@ -12,9 +11,9 @@ interface DirectoryRoute {
 }
 
 interface WallDirectoryListProps {
-  gymSlug: string;
   sections: { id: number; section_name: string }[];
   routes: DirectoryRoute[];
+  onSelectSection: (sectionId: number | 'none') => void;
 }
 
 interface WallEntry {
@@ -42,7 +41,7 @@ function buildEntry(id: number | 'none', name: string, sectionRoutes: DirectoryR
   };
 }
 
-export function WallDirectoryList({ gymSlug, sections, routes }: WallDirectoryListProps) {
+export function WallDirectoryList({ sections, routes, onSelectSection }: WallDirectoryListProps) {
   const entries: WallEntry[] = sections.map((s) =>
     buildEntry(
       s.id,
@@ -63,10 +62,11 @@ export function WallDirectoryList({ gymSlug, sections, routes }: WallDirectoryLi
   return (
     <div className="grid grid-cols-2 gap-3 sm:gap-4">
       {entries.map((entry) => (
-        <Link
+        <button
           key={entry.id}
-          to={`/routes/${gymSlug}/sections/${entry.id}`}
-          className="group relative h-[145px] sm:h-[220px] overflow-hidden rounded-2xl bg-gray-300 text-white"
+          type="button"
+          onClick={() => onSelectSection(entry.id)}
+          className="group relative h-[145px] sm:h-[220px] overflow-hidden rounded-2xl bg-gray-300 text-white text-left"
         >
           {entry.thumbnail ? (
             <img src={entry.thumbnail} alt="" className="absolute inset-0 w-full h-full object-cover" />
@@ -85,7 +85,7 @@ export function WallDirectoryList({ gymSlug, sections, routes }: WallDirectoryLi
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-2 text-center">
             <h2 className="text-base sm:text-2xl font-semibold leading-tight drop-shadow-sm">{entry.name}</h2>
           </div>
-        </Link>
+        </button>
       ))}
     </div>
   );

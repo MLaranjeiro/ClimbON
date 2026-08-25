@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import { getGradeColorHex } from '../lib/grades';
+import { compareGrades, getGradeColorHex } from '../lib/grades';
 import { supabase } from '../lib/supabase';
 import type { Gym, RouteGrade } from '../types';
 import { GymMapViewer } from './GymMapViewer';
@@ -36,7 +36,7 @@ export function GymMapContent({ gymId }: { gymId: number }) {
   });
 
   const { data: sections } = useQuery({
-    queryKey: ['gym-sections', gymId],
+    queryKey: ['gym-sections-map', gymId],
     queryFn: async () => {
       const { data, error } = await supabase.from('sections').select('id, section_name').eq('gym_id', gymId);
       if (error) throw error;
@@ -45,7 +45,7 @@ export function GymMapContent({ gymId }: { gymId: number }) {
   });
 
   const { data: routes } = useQuery({
-    queryKey: ['gym-routes', gymId],
+    queryKey: ['gym-routes-map', gymId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('routes')
@@ -72,10 +72,17 @@ export function GymMapContent({ gymId }: { gymId: number }) {
         if (a.map_x != null && b.map_x != null) return a.map_x - b.map_x;
         if (a.map_x != null) return -1;
         if (b.map_x != null) return 1;
-        return a.route_name.localeCompare(b.route_name);
+        return compareGrades(a.grade, b.grade);
       })
       .map((r) => ({ id: r.id, grade: r.grade }));
   }, [routeList, selectedRoute]);
+
+  function openSection(sectionId: number | 'none') {
+    const matches = routeList.filter((r) => (sectionId === 'none' ? r.section_id == null : r.section_id === sectionId));
+    if (matches.length === 0) return;
+    const lowest = [...matches].sort((a, b) => compareGrades(a.grade, b.grade))[0];
+    setSelectedRouteId(lowest.id);
+  }
 
   if (gymLoading) return <p className="text-gray-500 text-sm">Loading…</p>;
   if (!gym) return <p className="text-gray-500 text-sm">Gym not found.</p>;
@@ -98,7 +105,7 @@ export function GymMapContent({ gymId }: { gymId: number }) {
       ) : (
         <div>
           <p className="text-gray-500 text-sm mb-4">This gym hasn't uploaded a map image yet — here's the wall directory instead.</p>
-          <WallDirectoryList gymSlug={gym.slug} sections={sectionList} routes={routeList} />
+          <WallDirectoryList sections={sectionList} routes={routeList} onSelectSection={openSection} />
         </div>
       )}
 
