@@ -50,8 +50,6 @@ export function RouteDetail() {
         </div>
       )}
 
-      {route.description && <p className="text-gray-900 whitespace-pre-line">{route.description}</p>}
-
       <div className="flex items-center gap-6 text-sm text-gray-500">
         <span className="flex items-center gap-1.5">
           <CheckCircle className="w-4 h-4" />
