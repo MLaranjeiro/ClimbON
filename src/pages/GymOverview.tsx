@@ -178,10 +178,15 @@ export function GymOverview() {
   const activeFilterCount = selectedGrades.length + selectedSectionIds.length;
 
   function openSection(sectionId: number | 'none') {
-    const matches = routeList
-      .filter((r) => (sectionId === 'none' ? r.section_id == null : r.section_id === sectionId))
-      .sort((a, b) => compareGrades(a.grade, b.grade))
-      .map((r) => ({ id: r.id, grade: r.grade }));
+    const sectionRoutes = routeList.filter((r) =>
+      sectionId === 'none' ? r.section_id == null : r.section_id === sectionId,
+    );
+    // Prefer routes matching the active search/grade filters, so the carousel opens on and
+    // stays within what the user was actually looking at — fall back to the full wall only
+    // if the filter wouldn't leave anything to show (e.g. the wall matched by name alone).
+    const filtered = sectionRoutes.filter(routeMatchesSearch);
+    const pool = filtered.length > 0 ? filtered : sectionRoutes;
+    const matches = [...pool].sort((a, b) => compareGrades(a.grade, b.grade)).map((r) => ({ id: r.id, grade: r.grade }));
     if (matches.length === 0) return;
     setSiblingRoutes(matches);
     setSelectedRouteId(matches[0].id);
