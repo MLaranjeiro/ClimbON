@@ -1,12 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
-import { Info, Map as MapIcon, Search, Sparkles } from 'lucide-react';
-import { useState } from 'react';
+import { Info, ListFilter, Map as MapIcon, Search, Sparkles } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Bar, BarChart, Cell, ResponsiveContainer } from 'recharts';
 import { GradeBreakdownModal } from '../components/GradeBreakdownModal';
 import { GymMapModal } from '../components/GymMapModal';
 import { InfoModal } from '../components/InfoModal';
 import { RouteDetailModal } from '../components/RouteDetailModal';
+import { RouteFiltersPanel } from '../components/RouteFiltersPanel';
 import { WallDirectoryList } from '../components/WallDirectoryList';
 import { useGymBySlug } from '../hooks/useGymBySlug';
 import { compareGrades, GRADE_ORDER, GRADE_SWATCH_BORDER, getGradeColorHex } from '../lib/grades';
@@ -40,6 +41,20 @@ export function GymOverview() {
   const [showGradeBreakdown, setShowGradeBreakdown] = useState(false);
   const [selectedRouteId, setSelectedRouteId] = useState<number | null>(null);
   const [siblingRoutes, setSiblingRoutes] = useState<{ id: number; grade: RouteGrade }[]>([]);
+  const [selectedGrades, setSelectedGrades] = useState<RouteGrade[]>([]);
+  const [selectedSectionIds, setSelectedSectionIds] = useState<(number | 'none')[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
+  const filtersRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (filtersRef.current && !filtersRef.current.contains(e.target as Node)) {
+        setShowFilters(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const { data: gym, isLoading: gymLoading } = useGymBySlug(gymSlug);
   const id = gym?.id;
@@ -97,20 +112,70 @@ export function GymOverview() {
     .slice(0, 5);
 
   const q = query.trim().toLowerCase();
+  const hasGradeFilter = selectedGrades.length > 0;
+  const hasWallFilter = selectedSectionIds.length > 0;
 
-  function routeMatches(r: OverviewRoute) {
-    return r.route_name.toLowerCase().includes(q) || r.styles.some((s) => s.toLowerCase().includes(q));
+  function routeMatchesGrade(r: OverviewRoute) {
+    return !hasGradeFilter || selectedGrades.includes(r.grade);
+  }
+  function routeMatchesText(r: OverviewRoute) {
+    return !q || r.route_name.toLowerCase().includes(q) || r.styles.some((s) => s.toLowerCase().includes(q));
+  }
+  function routeMatchesSearch(r: OverviewRoute) {
+    return routeMatchesText(r) && routeMatchesGrade(r);
   }
 
-  const filteredSections = !q
-    ? sectionList
-    : sectionList.filter(
-        (s) => s.section_name.toLowerCase().includes(q) || routeList.some((r) => r.section_id === s.id && routeMatches(r)),
-      );
+  // Grade filter narrows which climbs count/appear per wall card; a text-search match still
+  // shows the wall's full picture (matches the "find this wall" intent rather than "only show this").
+  const directoryRoutesBase = hasGradeFilter ? routeList.filter(routeMatchesGrade) : routeList;
+
+  const filteredSections = sectionList.filter((s) => {
+    if (hasWallFilter && !selectedSectionIds.includes(s.id)) return false;
+    if (!q && !hasGradeFilter) return true;
+    const nameMatches = !hasGradeFilter && s.section_name.toLowerCase().includes(q);
+    const hasMatchingRoute = routeList.some((r) => r.section_id === s.id && routeMatchesSearch(r));
+    return nameMatches || hasMatchingRoute;
+  });
 
   const unsectionedRoutes = routeList.filter((r) => r.section_id == null);
-  const includeUnsectioned = !q || unsectionedRoutes.some(routeMatches);
-  const directoryRoutes = includeUnsectioned ? routeList : routeList.filter((r) => r.section_id != null);
+  const unsectionedAllowedByWallFilter = !hasWallFilter || selectedSectionIds.includes('none');
+  const includeUnsectioned =
+    unsectionedAllowedByWallFilter && (!q && !hasGradeFilter ? true : unsectionedRoutes.some(routeMatchesSearch));
+  const directoryRoutes = includeUnsectioned
+    ? directoryRoutesBase
+    : directoryRoutesBase.filter((r) => r.section_id != null);
+
+  const wallOptions = [
+    ...sectionList.map((s) => ({
+      id: s.id as number | 'none',
+      name: s.section_name,
+      count: routeList.filter((r) => r.section_id === s.id && routeMatchesGrade(r)).length,
+    })),
+    ...(unsectionedRoutes.length > 0
+      ? [{ id: 'none' as const, name: 'Unsectioned', count: unsectionedRoutes.filter(routeMatchesGrade).length }]
+      : []),
+  ];
+
+  const totalMatchingClimbs = routeList.filter((r) => {
+    if (hasWallFilter) {
+      const inWall = r.section_id == null ? selectedSectionIds.includes('none') : selectedSectionIds.includes(r.section_id);
+      if (!inWall) return false;
+    }
+    return routeMatchesSearch(r);
+  }).length;
+
+  function toggleGrade(grade: RouteGrade) {
+    setSelectedGrades((prev) => (prev.includes(grade) ? prev.filter((g) => g !== grade) : [...prev, grade]));
+  }
+  function toggleSection(id: number | 'none') {
+    setSelectedSectionIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+  function resetFilters() {
+    setSelectedGrades([]);
+    setSelectedSectionIds([]);
+  }
+
+  const activeFilterCount = selectedGrades.length + selectedSectionIds.length;
 
   function openSection(sectionId: number | 'none') {
     const matches = routeList
@@ -213,6 +278,35 @@ export function GymOverview() {
           />
         </div>
 
+        {showFilters && <div className="fixed inset-0 z-10 bg-black/10" onClick={() => setShowFilters(false)} />}
+
+        <div className="relative z-20 shrink-0" ref={filtersRef}>
+          <button
+            type="button"
+            onClick={() => setShowFilters((v) => !v)}
+            className="btn-secondary-light text-sm flex items-center gap-2"
+          >
+            <ListFilter className="w-4 h-4" />
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="flex items-center justify-center w-4 h-4 rounded-full bg-brand-600 text-white text-[10px] font-semibold">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+          {showFilters && (
+            <RouteFiltersPanel
+              wallOptions={wallOptions}
+              selectedGrades={selectedGrades}
+              onToggleGrade={toggleGrade}
+              selectedSectionIds={selectedSectionIds}
+              onToggleSection={toggleSection}
+              onReset={resetFilters}
+              matchCount={totalMatchingClimbs}
+            />
+          )}
+        </div>
+
         {freshSections.length > 0 && (
           <div className="flex items-center gap-1.5 flex-wrap ml-auto">
             <span className="flex items-center gap-1 text-xs font-semibold text-green-700 uppercase tracking-wide shrink-0">
@@ -238,7 +332,9 @@ export function GymOverview() {
         {routesLoading ? (
           <p className="text-gray-500 text-sm">Loading…</p>
         ) : filteredSections.length === 0 && !includeUnsectioned ? (
-          <p className="text-gray-500 text-sm">No climbs or walls match "{query}".</p>
+          <p className="text-gray-500 text-sm">
+            {q ? `No climbs or walls match "${query}".` : 'No climbs match the selected filters.'}
+          </p>
         ) : (
           <WallDirectoryList sections={filteredSections} routes={directoryRoutes} onSelectSection={openSection} />
         )}
