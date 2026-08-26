@@ -112,13 +112,6 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
                   ) : (
                     <Mountain className="w-10 h-10 text-gray-300" />
                   )}
-                  <span className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-full bg-white/95 px-2 py-1 text-xs font-semibold text-gray-900">
-                    <span
-                      className="w-2.5 h-2.5 rounded-full border"
-                      style={{ backgroundColor: getGradeColorHex(route.grade), borderColor: GRADE_SWATCH_BORDER }}
-                    />
-                    {route.grade}
-                  </span>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
