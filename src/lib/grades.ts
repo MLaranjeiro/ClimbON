@@ -52,3 +52,9 @@ export function gradeFromRatingValue(value: number): RouteGrade {
   const idx = Math.min(Math.max(Math.round(value), 0), GRADE_ORDER.length - 1);
   return GRADE_ORDER[idx];
 }
+
+// Inverse of gradeFromRatingValue — for writing a submitted grade suggestion back to
+// difficulty_ratings.grade.
+export function gradeToRatingValue(grade: RouteGrade): number {
+  return GRADE_ORDER.indexOf(grade);
+}
