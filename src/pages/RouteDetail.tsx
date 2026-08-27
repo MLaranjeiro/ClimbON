@@ -1,12 +1,15 @@
-import { CheckCircle, MessageSquare, Mountain } from 'lucide-react';
+import { CheckCircle, Mountain, PlusCircle } from 'lucide-react';
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Avatar } from '../components/Avatar';
+import { BetaList } from '../components/BetaList';
+import { LogClimbModal } from '../components/LogClimbModal';
 import { useRouteDetail } from '../hooks/useRouteDetail';
 import { getGradeBadgeClasses } from '../lib/grades';
 
 export function RouteDetail() {
   const { gymSlug, routeId } = useParams();
   const id = Number(routeId);
+  const [showLogClimb, setShowLogClimb] = useState(false);
 
   const { route, isLoading, beta, stats } = useRouteDetail(id);
 
@@ -38,6 +41,14 @@ export function RouteDetail() {
             {route.status === 'inactive' && <span className="badge bg-gray-100 text-gray-500">Retired</span>}
           </div>
         </div>
+        <button
+          type="button"
+          onClick={() => setShowLogClimb(true)}
+          className="btn-primary text-sm flex items-center gap-2 shrink-0"
+        >
+          <PlusCircle className="w-4 h-4" />
+          Log Climb
+        </button>
       </div>
 
       {route.styles.length > 0 && (
@@ -63,32 +74,19 @@ export function RouteDetail() {
         {!beta || beta.length === 0 ? (
           <p className="text-gray-500 text-sm">No beta uploaded yet.</p>
         ) : (
-          <ul className="space-y-4">
-            {beta.map((b) => (
-              <li key={b.id} className="flex gap-3">
-                <Avatar src={b.profile?.avatar_url} name={b.profile?.username} size={32} />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-900 flex items-center gap-1.5">
-                    <MessageSquare className="w-3.5 h-3.5 text-gray-400" />
-                    {b.profile?.username ?? 'Unknown climber'}
-                  </p>
-                  {b.description_text && <p className="text-sm text-gray-700 mt-1">{b.description_text}</p>}
-                  {b.video_url && (
-                    <a
-                      href={b.video_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-brand-600 text-xs hover:underline"
-                    >
-                      View video
-                    </a>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
+          <BetaList beta={beta} />
         )}
       </section>
+
+      {showLogClimb && (
+        <LogClimbModal
+          routeId={route.id}
+          routeName={route.route_name}
+          grade={route.grade}
+          sectionName={route.section?.section_name}
+          onClose={() => setShowLogClimb(false)}
+        />
+      )}
     </div>
   );
 }

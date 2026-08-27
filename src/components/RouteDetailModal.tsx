@@ -1,10 +1,11 @@
-import { CheckCircle, ChevronLeft, ChevronRight, MessageSquare, Mountain, Video, X } from 'lucide-react';
-import { useEffect } from 'react';
+import { CheckCircle, ChevronLeft, ChevronRight, Mountain, PlusCircle, Video, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Avatar } from '../components/Avatar';
 import { useRouteDetail } from '../hooks/useRouteDetail';
 import { GRADE_SWATCH_BORDER, getGradeBadgeClasses, getGradeColorHex } from '../lib/grades';
 import type { RouteGrade } from '../types';
+import { BetaList } from './BetaList';
+import { LogClimbModal } from './LogClimbModal';
 
 interface SiblingRoute {
   id: number;
@@ -20,14 +21,17 @@ interface RouteDetailModalProps {
 
 export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }: RouteDetailModalProps) {
   const { route, isLoading, beta, stats } = useRouteDetail(routeId);
+  const [showLogClimb, setShowLogClimb] = useState(false);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      // Let the Log Climb modal handle its own Escape while it's open on top of this one.
+      if (showLogClimb) return;
       if (e.key === 'Escape') onClose();
     }
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [onClose, showLogClimb]);
 
   const currentIndex = siblingRoutes.findIndex((r) => r.id === routeId);
   const hasSiblings = siblingRoutes.length > 0 && currentIndex !== -1;
@@ -38,7 +42,12 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 overflow-y-auto bg-black/40"
+      onClick={() => {
+        if (!showLogClimb) onClose();
+      }}
+    >
       <div className="flex min-h-full items-center justify-center px-4 py-10">
         <div className="w-full max-w-2xl rounded-xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center border-b border-gray-100 px-4 py-3">
@@ -96,14 +105,22 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
               <p className="text-gray-500 text-sm">Loading…</p>
             ) : (
               <div className="space-y-6">
-                <div>
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 min-w-0">
                     <span className={`badge ${getGradeBadgeClasses(route.grade)}`}>{route.grade}</span>
-                    <h2 className="text-lg font-bold text-gray-900">{route.route_name}</h2>
+                    <h2 className="text-lg font-bold text-gray-900 truncate">{route.route_name}</h2>
                     {route.section && (
-                      <span className="text-sm text-gray-400">on {route.section.section_name}</span>
+                      <span className="text-sm text-gray-400 shrink-0">on {route.section.section_name}</span>
                     )}
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowLogClimb(true)}
+                    className="btn-primary text-sm flex items-center gap-2 shrink-0"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    Log Climb
+                  </button>
                 </div>
 
                 <div className="relative w-full h-64 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
@@ -190,32 +207,7 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
                       <p className="text-gray-500 text-sm">No betas yet. Be the first to share one!</p>
                     </div>
                   ) : (
-                    <ul className="space-y-4">
-                      {beta.map((b) => (
-                        <li key={b.id} className="flex gap-3">
-                          <Avatar src={b.profile?.avatar_url} name={b.profile?.username} size={28} />
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-gray-900 flex items-center gap-1.5">
-                              <MessageSquare className="w-3.5 h-3.5 text-gray-400" />
-                              {b.profile?.username ?? 'Unknown climber'}
-                            </p>
-                            {b.description_text && (
-                              <p className="text-sm text-gray-700 mt-1">{b.description_text}</p>
-                            )}
-                            {b.video_url && (
-                              <a
-                                href={b.video_url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-brand-600 text-xs hover:underline"
-                              >
-                                View video
-                              </a>
-                            )}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
+                    <BetaList beta={beta} />
                   )}
                 </section>
 
@@ -225,6 +217,16 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
           </div>
         </div>
       </div>
+
+      {showLogClimb && route && (
+        <LogClimbModal
+          routeId={route.id}
+          routeName={route.route_name}
+          grade={route.grade}
+          sectionName={route.section?.section_name}
+          onClose={() => setShowLogClimb(false)}
+        />
+      )}
     </div>,
     document.body,
   );
