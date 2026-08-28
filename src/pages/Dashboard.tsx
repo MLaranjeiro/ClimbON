@@ -8,10 +8,8 @@ import {
   MessageSquare,
   Mountain,
   Sparkles,
-  Star,
   Target,
   Trophy,
-  type LucideIcon,
 } from 'lucide-react';
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from '../context/auth';
@@ -21,7 +19,6 @@ import {
   getGradeBadgeClasses,
   getGradeColorHex,
   getHighestGrade,
-  meetsGrade,
 } from '../lib/grades';
 import { supabase } from '../lib/supabase';
 import type { RouteGrade } from '../types';
@@ -79,13 +76,6 @@ function relativeDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString();
 }
 
-interface TrophyDef {
-  id: string;
-  label: string;
-  icon: LucideIcon;
-  achieved: boolean;
-}
-
 export function Dashboard() {
   const { user, profile, gymMemberships } = useAuth();
 
@@ -133,16 +123,6 @@ export function Dashboard() {
     count: grades.filter((g) => g === grade).length,
   })).filter((row) => row.count > 0);
 
-  const trophies: TrophyDef[] = [
-    { id: 'first-send', label: 'First Send', icon: CheckCircle, achieved: totalClimbs >= 1 },
-    { id: 'ten-sends', label: '10 Sends', icon: Award, achieved: totalClimbs >= 10 },
-    { id: 'fifty-sends', label: '50 Sends', icon: Trophy, achieved: totalClimbs >= 50 },
-    { id: 'v5-club', label: 'V5 Club', icon: Mountain, achieved: meetsGrade(highestGrade, 'V5') },
-    { id: 'v10-club', label: 'V10 Club', icon: Star, achieved: meetsGrade(highestGrade, 'V10') },
-    { id: 'monthly-5', label: '5 in a Month', icon: Calendar, achieved: climbsThisMonth >= 5 },
-    { id: 'streak-4', label: '4 Week Streak', icon: Flame, achieved: weeklyStreak >= 4 },
-  ].filter((t) => t.achieved);
-
   const initial = profile?.username?.charAt(0).toUpperCase() ?? '?';
   const memberSince = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
@@ -174,65 +154,60 @@ export function Dashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-4 sm:ml-auto sm:border-l sm:border-gray-200 sm:pl-6">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
-                <Mountain className="w-4 h-4 text-brand-600" />
+          <div className="flex flex-wrap items-center gap-6 sm:ml-auto">
+            {highestGrade && (
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-amber-100 border-2 border-amber-300 flex items-center justify-center shrink-0">
+                  <Trophy className="w-4 h-4 text-amber-600" />
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs">Trophy</div>
+                  <div className="text-xl font-bold text-gray-900">{highestGrade} Climber</div>
+                </div>
               </div>
-              <div>
-                <div className="text-gray-500 text-xs">Total climbs</div>
-                <div className="text-xl font-bold text-gray-900">{totalClimbs}</div>
+            )}
+
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-4 sm:border-l sm:border-gray-200 sm:pl-6">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
+                  <Mountain className="w-4 h-4 text-brand-600" />
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs">Total climbs</div>
+                  <div className="text-xl font-bold text-gray-900">{totalClimbs}</div>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
-                <Award className="w-4 h-4 text-brand-600" />
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
+                  <Award className="w-4 h-4 text-brand-600" />
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs">Highest grade</div>
+                  <div className="text-xl font-bold text-gray-900">{highestGrade ?? '—'}</div>
+                </div>
               </div>
-              <div>
-                <div className="text-gray-500 text-xs">Highest grade</div>
-                <div className="text-xl font-bold text-gray-900">{highestGrade ?? '—'}</div>
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
+                  <Calendar className="w-4 h-4 text-brand-600" />
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs">This month</div>
+                  <div className="text-xl font-bold text-gray-900">{climbsThisMonth}</div>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
-                <Calendar className="w-4 h-4 text-brand-600" />
-              </div>
-              <div>
-                <div className="text-gray-500 text-xs">This month</div>
-                <div className="text-xl font-bold text-gray-900">{climbsThisMonth}</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
-                <Flame className="w-4 h-4 text-brand-600" />
-              </div>
-              <div>
-                <div className="text-gray-500 text-xs">Weekly streak</div>
-                <div className="text-xl font-bold text-gray-900">{weeklyStreak}</div>
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
+                  <Flame className="w-4 h-4 text-brand-600" />
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs">Weekly streak</div>
+                  <div className="text-xl font-bold text-gray-900">{weeklyStreak}</div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
-
-      {trophies.length > 0 && (
-        <section>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Trophies</h2>
-          <div className="flex gap-4 overflow-x-auto pb-1">
-            {trophies.map(({ id, label, icon: Icon }) => (
-              <div
-                key={id}
-                className="flex flex-col items-center gap-2 w-24 shrink-0 text-center"
-              >
-                <div className="w-14 h-14 rounded-full bg-amber-100 border-2 border-amber-300 flex items-center justify-center">
-                  <Icon className="w-6 h-6 text-amber-600" />
-                </div>
-                <span className="text-xs font-medium text-gray-700 leading-tight">{label}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
 
       <div className="grid lg:grid-cols-[minmax(0,1fr)_340px] gap-6 items-start">
         <div className="space-y-6">
