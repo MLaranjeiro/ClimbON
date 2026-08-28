@@ -1,16 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import {
-  Award,
-  Calendar,
-  CheckCircle,
-  Flame,
-  MapPin,
-  MessageSquare,
-  Mountain,
-  Sparkles,
-  Target,
-  Trophy,
-} from 'lucide-react';
+import { CheckCircle, Flame, MapPin, MessageSquare, Mountain, Sparkles, Target, Trophy } from 'lucide-react';
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from '../context/auth';
 import {
@@ -110,6 +99,20 @@ export function Dashboard() {
   const highestGradeThisMonth = getHighestGrade(gradesThisMonth);
   const gymsVisited = new Set((sends ?? []).map((s) => s.route?.gym?.gym_name).filter(Boolean)).size;
   const weeklyStreak = computeWeeklyStreak((sends ?? []).map((s) => s.date_completed));
+
+  const gymSendCounts = new Map<string, number>();
+  for (const s of sends ?? []) {
+    const name = s.route?.gym?.gym_name;
+    if (name) gymSendCounts.set(name, (gymSendCounts.get(name) ?? 0) + 1);
+  }
+  let activeGym: string | null = null;
+  let activeGymCount = 0;
+  for (const [name, count] of gymSendCounts) {
+    if (count > activeGymCount) {
+      activeGym = name;
+      activeGymCount = count;
+    }
+  }
   const climbsPerGrade = GRADE_ORDER.map((grade) => ({
     grade,
     count: grades.filter((g) => g === grade).length,
@@ -147,17 +150,15 @@ export function Dashboard() {
           </div>
 
           <div className="flex flex-wrap items-center gap-6 sm:ml-auto">
-            {highestGrade && (
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-amber-100 border-2 border-amber-300 flex items-center justify-center shrink-0">
-                  <Trophy className="w-4 h-4 text-amber-600" />
-                </div>
-                <div>
-                  <div className="text-gray-500 text-xs">Trophy</div>
-                  <div className="text-xl font-bold text-gray-900">{highestGrade} Climber</div>
-                </div>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-amber-100 border-2 border-amber-300 flex items-center justify-center shrink-0">
+                <Trophy className="w-4 h-4 text-amber-600" />
               </div>
-            )}
+              <div>
+                <div className="text-gray-500 text-xs">Hardest Climb</div>
+                <div className="text-xl font-bold text-gray-900">{highestGrade ?? '—'}</div>
+              </div>
+            </div>
 
             <div className="flex flex-wrap items-center gap-x-6 gap-y-4 sm:border-l sm:border-gray-200 sm:pl-6">
               <div className="flex items-center gap-3">
@@ -165,26 +166,8 @@ export function Dashboard() {
                   <Mountain className="w-4 h-4 text-brand-600" />
                 </div>
                 <div>
-                  <div className="text-gray-500 text-xs">Total climbs</div>
+                  <div className="text-gray-500 text-xs">Total Sends</div>
                   <div className="text-xl font-bold text-gray-900">{totalClimbs}</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
-                  <Award className="w-4 h-4 text-brand-600" />
-                </div>
-                <div>
-                  <div className="text-gray-500 text-xs">Highest grade</div>
-                  <div className="text-xl font-bold text-gray-900">{highestGrade ?? '—'}</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
-                  <Calendar className="w-4 h-4 text-brand-600" />
-                </div>
-                <div>
-                  <div className="text-gray-500 text-xs">This month</div>
-                  <div className="text-xl font-bold text-gray-900">{climbsThisMonth}</div>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -192,8 +175,17 @@ export function Dashboard() {
                   <Flame className="w-4 h-4 text-brand-600" />
                 </div>
                 <div>
-                  <div className="text-gray-500 text-xs">Weekly streak</div>
+                  <div className="text-gray-500 text-xs">Current Streak</div>
                   <div className="text-xl font-bold text-gray-900">{weeklyStreak}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
+                  <MapPin className="w-4 h-4 text-brand-600" />
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs">Active Gym</div>
+                  <div className="text-xl font-bold text-gray-900 truncate max-w-[10rem]">{activeGym ?? '—'}</div>
                 </div>
               </div>
             </div>
@@ -283,10 +275,9 @@ export function Dashboard() {
 
         <div className="space-y-6 lg:sticky lg:top-6">
           <section className="card-light">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">My Stats</h2>
+            <h2 className="text-lg font-bold text-gray-900 mb-4">This Month</h2>
 
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">This month</h3>
-            <dl className="space-y-2 mb-4">
+            <dl className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <dt className="text-gray-500">Climbs</dt>
                 <dd className="font-semibold text-gray-900">{climbsThisMonth}</dd>
@@ -295,27 +286,9 @@ export function Dashboard() {
                 <dt className="text-gray-500">Highest grade</dt>
                 <dd className="font-semibold text-gray-900">{highestGradeThisMonth ?? '—'}</dd>
               </div>
-            </dl>
-
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 pt-3 border-t border-gray-200">
-              All-time
-            </h3>
-            <dl className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <dt className="text-gray-500">Climbs</dt>
-                <dd className="font-semibold text-gray-900">{totalClimbs}</dd>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <dt className="text-gray-500">Highest grade</dt>
-                <dd className="font-semibold text-gray-900">{highestGrade ?? '—'}</dd>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <dt className="text-gray-500">Gyms visited</dt>
+              <div className="flex items-center justify-between text-sm pt-2 mt-2 border-t border-gray-200">
+                <dt className="text-gray-500">Gyms visited (all-time)</dt>
                 <dd className="font-semibold text-gray-900">{gymsVisited}</dd>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <dt className="text-gray-500">Weekly streak</dt>
-                <dd className="font-semibold text-gray-900">{weeklyStreak}</dd>
               </div>
             </dl>
           </section>
