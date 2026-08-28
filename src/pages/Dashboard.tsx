@@ -68,14 +68,6 @@ function computeWeeklyStreak(dates: string[]): number {
   return streak;
 }
 
-function relativeDate(dateStr: string) {
-  const diffDays = Math.round((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
-  if (diffDays <= 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return new Date(dateStr).toLocaleDateString();
-}
-
 export function Dashboard() {
   const { user, profile, gymMemberships } = useAuth();
 
@@ -218,34 +210,29 @@ export function Dashboard() {
             ) : !sends || sends.length === 0 ? (
               <p className="text-gray-500 text-sm">No climbs logged yet.</p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {sends.slice(0, 5).map((send) => (
                   <div
                     key={send.id}
-                    className="flex items-start gap-3 rounded-lg border border-gray-200 p-3 hover:border-gray-300 transition-colors"
+                    className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 hover:border-gray-300 transition-colors"
                   >
-                    <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                      <CheckCircle className="w-4 h-4 text-green-600" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-900">
-                        Sent <span className="font-semibold">{send.route?.route_name ?? 'Unknown route'}</span>
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        {send.route?.gym?.gym_name && (
-                          <span className="flex items-center gap-1 text-xs text-gray-500">
-                            <MapPin className="w-3 h-3" />
-                            {send.route.gym.gym_name}
-                          </span>
-                        )}
-                        {send.route?.grade && (
-                          <span className={`badge ${getGradeBadgeClasses(send.route.grade)}`}>
-                            {send.route.grade}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <span className="text-xs text-gray-500 shrink-0">{relativeDate(send.date_completed)}</span>
+                    <p className="text-sm text-gray-900 w-32 sm:w-44 shrink-0 truncate">
+                      <span className="font-semibold">{send.route?.route_name ?? 'Unknown route'}</span>
+                    </p>
+                    {send.route?.grade && (
+                      <span className={`badge shrink-0 ${getGradeBadgeClasses(send.route.grade)}`}>
+                        {send.route.grade}
+                      </span>
+                    )}
+                    {send.route?.gym?.gym_name && (
+                      <span className="flex items-center gap-1 text-xs text-gray-500 shrink-0 ml-auto">
+                        <MapPin className="w-3 h-3 shrink-0" />
+                        {send.route.gym.gym_name}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
