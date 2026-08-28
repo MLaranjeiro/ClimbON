@@ -44,6 +44,10 @@ function getWeekStart(date: Date) {
   return d.getTime();
 }
 
+function isThisWeek(dateStr: string) {
+  return getWeekStart(new Date(dateStr)) === getWeekStart(new Date());
+}
+
 function computeWeeklyStreak(dates: string[]): number {
   if (dates.length === 0) return 0;
   const weeks = new Set(dates.map((d) => getWeekStart(new Date(d))));
@@ -91,13 +95,18 @@ export function Dashboard() {
   const totalClimbs = sends?.length ?? 0;
   const grades = (sends ?? []).map((s) => s.route?.grade).filter((g): g is RouteGrade => !!g);
   const highestGrade = getHighestGrade(grades);
+  const climbsThisWeek = (sends ?? []).filter((s) => isThisWeek(s.date_completed)).length;
+  const gradesThisWeek = (sends ?? [])
+    .filter((s) => isThisWeek(s.date_completed))
+    .map((s) => s.route?.grade)
+    .filter((g): g is RouteGrade => !!g);
+  const highestGradeThisWeek = getHighestGrade(gradesThisWeek);
   const climbsThisMonth = (sends ?? []).filter((s) => isThisMonth(s.date_completed)).length;
   const gradesThisMonth = (sends ?? [])
     .filter((s) => isThisMonth(s.date_completed))
     .map((s) => s.route?.grade)
     .filter((g): g is RouteGrade => !!g);
   const highestGradeThisMonth = getHighestGrade(gradesThisMonth);
-  const gymsVisited = new Set((sends ?? []).map((s) => s.route?.gym?.gym_name).filter(Boolean)).size;
   const weeklyStreak = computeWeeklyStreak((sends ?? []).map((s) => s.date_completed));
 
   const gymSendCounts = new Map<string, number>();
@@ -275,8 +284,21 @@ export function Dashboard() {
 
         <div className="space-y-6 lg:sticky lg:top-6">
           <section className="card-light">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">This Month</h2>
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">This Week</h3>
+            <dl className="space-y-2 mb-4">
+              <div className="flex items-center justify-between text-sm">
+                <dt className="text-gray-500">Climbs</dt>
+                <dd className="font-semibold text-gray-900">{climbsThisWeek}</dd>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <dt className="text-gray-500">Highest grade</dt>
+                <dd className="font-semibold text-gray-900">{highestGradeThisWeek ?? '—'}</dd>
+              </div>
+            </dl>
 
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 pt-3 border-t border-gray-200">
+              This Month
+            </h3>
             <dl className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <dt className="text-gray-500">Climbs</dt>
@@ -285,10 +307,6 @@ export function Dashboard() {
               <div className="flex items-center justify-between text-sm">
                 <dt className="text-gray-500">Highest grade</dt>
                 <dd className="font-semibold text-gray-900">{highestGradeThisMonth ?? '—'}</dd>
-              </div>
-              <div className="flex items-center justify-between text-sm pt-2 mt-2 border-t border-gray-200">
-                <dt className="text-gray-500">Gyms visited (all-time)</dt>
-                <dd className="font-semibold text-gray-900">{gymsVisited}</dd>
               </div>
             </dl>
           </section>
