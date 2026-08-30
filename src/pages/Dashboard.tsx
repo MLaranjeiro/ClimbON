@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { CheckCircle, Flame, MapPin, MessageSquare, Mountain, Sparkles, Target, Trophy } from 'lucide-react';
-import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAuth } from '../context/auth';
 import {
   GRADE_ORDER,
@@ -318,6 +318,7 @@ export function Dashboard() {
             ) : (
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={climbsPerGrade}>
+                  <CartesianGrid vertical={false} stroke="#e5e7eb" strokeDasharray="3 3" />
                   <XAxis dataKey="grade" stroke="#6b7280" fontSize={11} tickLine={false} axisLine={false} />
                   <YAxis allowDecimals={false} stroke="#6b7280" fontSize={11} tickLine={false} axisLine={false} width={20} />
                   <Tooltip
