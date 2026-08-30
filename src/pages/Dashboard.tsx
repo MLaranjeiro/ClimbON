@@ -1,14 +1,22 @@
 import { useQuery } from '@tanstack/react-query';
-import { CheckCircle, Flame, MapPin, MessageSquare, Mountain, Sparkles, Target, Trophy } from 'lucide-react';
-import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { useAuth } from '../context/auth';
+import type { CSSProperties } from 'react';
 import {
-  GRADE_ORDER,
-  GRADE_SWATCH_BORDER,
-  getGradeBadgeClasses,
-  getGradeColorHex,
-  getHighestGrade,
-} from '../lib/grades';
+  Flame,
+  MapPin,
+  MessageSquare,
+  Mountain,
+  Plus,
+  Sparkles,
+  Target,
+  Trophy,
+  Video,
+  Zap,
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Avatar } from '../components/Avatar';
+import { useAuth } from '../context/auth';
+import { GRADE_ORDER, GRADE_SWATCH_BORDER, getGradeColorHex, getHighestGrade } from '../lib/grades';
 import { supabase } from '../lib/supabase';
 import type { RouteGrade } from '../types';
 
@@ -19,7 +27,8 @@ interface SendRow {
     id: number;
     route_name: string;
     grade: RouteGrade;
-    gym: { gym_name: string } | null;
+    styles: string[];
+    gym: { gym_name: string; slug: string } | null;
   } | null;
 }
 
@@ -61,8 +70,32 @@ function computeWeeklyStreak(dates: string[]): number {
   return streak;
 }
 
+function startOfDay(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
+function formatRelativeDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  const diffDays = Math.round((startOfDay(new Date()) - startOfDay(date)) / (24 * 60 * 60 * 1000));
+  if (diffDays <= 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 35) {
+    const weeks = Math.round(diffDays / 7);
+    return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+  }
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function getGradeSolidBadgeProps(grade: RouteGrade): { className: string; style?: CSSProperties } {
+  if (grade === 'V0') {
+    return { className: 'bg-slate-100 text-slate-700' };
+  }
+  return { className: 'text-white', style: { backgroundColor: getGradeColorHex(grade) } };
+}
+
 export function Dashboard() {
-  const { user, profile, gymMemberships } = useAuth();
+  const { user, profile, gymMemberships, homeGym } = useAuth();
 
   const { data: sends, isLoading: sendsLoading } = useQuery({
     queryKey: ['sends', user?.id],
@@ -70,7 +103,7 @@ export function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('sends')
-        .select('id, date_completed, route:routes(id, route_name, grade, gym:gyms(gym_name))')
+        .select('id, date_completed, route:routes(id, route_name, grade, styles, gym:gyms(gym_name, slug))')
         .eq('user_id', user!.id)
         .order('date_completed', { ascending: false });
       if (error) throw error;
@@ -114,20 +147,21 @@ export function Dashboard() {
     const name = s.route?.gym?.gym_name;
     if (name) gymSendCounts.set(name, (gymSendCounts.get(name) ?? 0) + 1);
   }
-  let activeGym: string | null = null;
-  let activeGymCount = 0;
+  let mostFrequentGym: string | null = null;
+  let mostFrequentGymCount = 0;
   for (const [name, count] of gymSendCounts) {
-    if (count > activeGymCount) {
-      activeGym = name;
-      activeGymCount = count;
+    if (count > mostFrequentGymCount) {
+      mostFrequentGym = name;
+      mostFrequentGymCount = count;
     }
   }
+  const activeGym = homeGym?.gym_name ?? mostFrequentGym;
   const climbsPerGrade = GRADE_ORDER.map((grade) => ({
     grade,
     count: grades.filter((g) => g === grade).length,
   })).filter((row) => row.count > 0);
+  const avgPerGrade = climbsPerGrade.length > 0 ? grades.length / climbsPerGrade.length : 0;
 
-  const initial = profile?.username?.charAt(0).toUpperCase() ?? '?';
   const memberSince = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
     : null;
@@ -137,17 +171,59 @@ export function Dashboard() {
       ? `${gymMemberships.length} gym${gymMemberships.length > 1 ? 's' : ''} managed`
       : 'Climber';
 
+  const statTiles: {
+    label: string;
+    value: string | number;
+    icon: typeof Trophy;
+    tint: string;
+    iconTint: string;
+    chipBg: string;
+    muted?: boolean;
+  }[] = [
+    {
+      label: 'Hardest Climb',
+      value: highestGrade ?? '—',
+      icon: Trophy,
+      tint: 'bg-amber-50 border-amber-100',
+      iconTint: 'text-amber-600',
+      chipBg: 'bg-amber-500/15',
+    },
+    {
+      label: 'Total Sends',
+      value: totalClimbs,
+      icon: Mountain,
+      tint: 'bg-blue-50 border-blue-100',
+      iconTint: 'text-blue-600',
+      chipBg: 'bg-blue-500/15',
+    },
+    {
+      label: 'Current Streak',
+      value: weeklyStreak > 0 ? `${weeklyStreak} wk${weeklyStreak > 1 ? 's' : ''}` : 'Start today!',
+      icon: Flame,
+      tint: 'bg-orange-50 border-orange-100',
+      iconTint: 'text-orange-600',
+      chipBg: 'bg-orange-500/15',
+      muted: weeklyStreak === 0,
+    },
+    {
+      label: 'Active Gym',
+      value: activeGym ?? '—',
+      icon: MapPin,
+      tint: 'bg-teal-50 border-teal-100',
+      iconTint: 'text-teal-600',
+      chipBg: 'bg-teal-500/15',
+    },
+  ];
+
   return (
     <div className="max-w-[1400px] mx-auto space-y-6">
-      <section>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+      <section className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-br from-brand-500/10 via-brand-400/5 to-transparent pointer-events-none" />
+
+        <div className="relative flex flex-col sm:flex-row sm:items-center gap-5 p-6 sm:p-8 pb-4">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full overflow-hidden bg-brand-100 flex items-center justify-center shrink-0">
-              {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-2xl font-bold text-brand-700">{initial}</span>
-              )}
+            <div className="relative shrink-0 rounded-full p-[3px] bg-gradient-to-br from-brand-400 to-brand-600">
+              <Avatar src={profile?.avatar_url} name={profile?.username} size={60} className="ring-4 ring-white" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-gray-900">{profile?.username}</h1>
@@ -158,51 +234,39 @@ export function Dashboard() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-6 sm:ml-auto">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-amber-100 border-2 border-amber-300 flex items-center justify-center shrink-0">
-                <Trophy className="w-4 h-4 text-amber-600" />
-              </div>
-              <div>
-                <div className="text-gray-500 text-xs">Hardest Climb</div>
-                <div className="text-xl font-bold text-gray-900">{highestGrade ?? '—'}</div>
-              </div>
-            </div>
+          <Link
+            to={homeGym ? `/routes/${homeGym.slug}` : '/routes'}
+            className="btn-primary inline-flex items-center justify-center gap-2 rounded-full sm:ml-auto shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            Log a Send
+          </Link>
+        </div>
 
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-4 sm:border-l sm:border-gray-200 sm:pl-6">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
-                  <Mountain className="w-4 h-4 text-brand-600" />
+        <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-3 px-6 sm:px-8 pb-6 sm:pb-8">
+          {statTiles.map(({ label, value, icon: Icon, tint, iconTint, chipBg, muted }) => (
+            <div key={label} className={`flex flex-col justify-between rounded-xl border p-4 ${tint}`}>
+              <div className="flex items-center gap-2 mb-2">
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${chipBg}`}>
+                  <Icon className={`w-4 h-4 ${iconTint}`} />
                 </div>
-                <div>
-                  <div className="text-gray-500 text-xs">Total Sends</div>
-                  <div className="text-xl font-bold text-gray-900">{totalClimbs}</div>
-                </div>
+                <span className="text-xs font-medium text-gray-600">{label}</span>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
-                  <Flame className="w-4 h-4 text-brand-600" />
-                </div>
-                <div>
-                  <div className="text-gray-500 text-xs">Current Streak</div>
-                  <div className="text-xl font-bold text-gray-900">{weeklyStreak}</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
-                  <MapPin className="w-4 h-4 text-brand-600" />
-                </div>
-                <div>
-                  <div className="text-gray-500 text-xs">Active Gym</div>
-                  <div className="text-xl font-bold text-gray-900 truncate max-w-[10rem]">{activeGym ?? '—'}</div>
-                </div>
+              <div
+                className={
+                  muted
+                    ? 'text-sm font-semibold text-gray-400 truncate'
+                    : 'text-3xl font-extrabold tracking-tight text-gray-900 truncate'
+                }
+              >
+                {value}
               </div>
             </div>
-          </div>
+          ))}
         </div>
       </section>
 
-      <div className="grid lg:grid-cols-[minmax(0,1fr)_340px] gap-6 items-start">
+      <div className="grid lg:grid-cols-[minmax(0,1fr)_340px] gap-6 items-stretch">
         <div className="space-y-6">
           <section className="card-light">
             <h2 className="text-lg font-bold text-gray-900 mb-3">Recent activity</h2>
@@ -212,30 +276,69 @@ export function Dashboard() {
               <p className="text-gray-500 text-sm">No climbs logged yet.</p>
             ) : (
               <div className="space-y-2">
-                {sends.slice(0, 5).map((send) => (
-                  <div
-                    key={send.id}
-                    className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 hover:border-gray-300 transition-colors"
-                  >
-                    <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-                      <CheckCircle className="w-4 h-4 text-green-600" />
+                {sends.slice(0, 5).map((send) => {
+                  const rowContent = (
+                    <>
+                      <div className="w-8 h-8 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
+                        <Zap className="w-4 h-4 text-brand-600" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {send.route?.grade && (
+                            <span
+                              className={`badge shrink-0 rounded-md ${getGradeSolidBadgeProps(send.route.grade).className}`}
+                              style={getGradeSolidBadgeProps(send.route.grade).style}
+                            >
+                              {send.route.grade}
+                            </span>
+                          )}
+                          <p className="text-sm font-semibold text-gray-900 truncate">
+                            {send.route?.route_name ?? 'Unknown route'}
+                          </p>
+                        </div>
+                        {send.route?.styles && send.route.styles.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                            {send.route.styles.slice(0, 2).map((style) => (
+                              <span key={style} className="badge bg-gray-100 text-gray-600 shrink-0">
+                                {style}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="ml-auto flex flex-col items-end gap-1 shrink-0 text-right">
+                        <span className="text-xs text-gray-400">{formatRelativeDate(send.date_completed)}</span>
+                        {send.route?.gym?.gym_name && (
+                          <span className="flex items-center gap-1 text-xs text-gray-500">
+                            <MapPin className="w-3 h-3 shrink-0" />
+                            {send.route.gym.gym_name}
+                          </span>
+                        )}
+                      </div>
+                    </>
+                  );
+                  const rowClasses =
+                    'flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2.5 hover:border-slate-300 hover:bg-slate-50/50 transition-all';
+                  const gymSlug = send.route?.gym?.slug;
+                  const routeId = send.route?.id;
+
+                  if (gymSlug && routeId) {
+                    return (
+                      <Link
+                        key={send.id}
+                        to={`/routes/${gymSlug}/climbs/${routeId}`}
+                        className={`${rowClasses} cursor-pointer`}
+                      >
+                        {rowContent}
+                      </Link>
+                    );
+                  }
+                  return (
+                    <div key={send.id} className={rowClasses}>
+                      {rowContent}
                     </div>
-                    <p className="text-sm text-gray-900 w-32 sm:w-44 shrink-0 truncate">
-                      <span className="font-semibold">{send.route?.route_name ?? 'Unknown route'}</span>
-                    </p>
-                    {send.route?.grade && (
-                      <span className={`badge shrink-0 ${getGradeBadgeClasses(send.route.grade)}`}>
-                        {send.route.grade}
-                      </span>
-                    )}
-                    {send.route?.gym?.gym_name && (
-                      <span className="flex items-center gap-1 text-xs text-gray-500 shrink-0 ml-auto">
-                        <MapPin className="w-3 h-3 shrink-0" />
-                        {send.route.gym.gym_name}
-                      </span>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>
@@ -245,7 +348,15 @@ export function Dashboard() {
             {betasLoading ? (
               <p className="text-gray-500 text-sm">Loading…</p>
             ) : !betas || betas.length === 0 ? (
-              <p className="text-gray-500 text-sm">No beta uploaded yet.</p>
+              <div className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 py-10 text-center">
+                <div className="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center">
+                  <Video className="w-5 h-5 text-gray-400" />
+                </div>
+                <p className="text-sm font-medium text-gray-700">No beta uploaded yet</p>
+                <p className="text-xs text-gray-400 max-w-xs">
+                  Share a video or write-up from any route page to help other climbers send it.
+                </p>
+              </div>
             ) : (
               <ul className="divide-y divide-gray-200">
                 {betas.map((beta) => (
@@ -278,11 +389,16 @@ export function Dashboard() {
               <Sparkles className="w-4 h-4 text-brand-600" />
               Recommended routes
             </h2>
-            <p className="text-gray-500 text-sm">Route recommendations are coming soon.</p>
+            <div className="flex items-center gap-3 rounded-xl border-2 border-dashed border-gray-200 py-6 px-4">
+              <div className="w-11 h-11 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
+                <Sparkles className="w-5 h-5 text-brand-600" />
+              </div>
+              <p className="text-gray-500 text-sm">Route recommendations are coming soon.</p>
+            </div>
           </section>
         </div>
 
-        <div className="space-y-6 lg:sticky lg:top-6">
+        <div className="flex flex-col gap-6 lg:sticky lg:top-6">
           <section className="card-light">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">This Week</h3>
             <dl className="space-y-2 mb-4">
@@ -317,18 +433,37 @@ export function Dashboard() {
               <p className="text-gray-500 text-sm">No sends logged yet.</p>
             ) : (
               <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={climbsPerGrade}>
-                  <CartesianGrid vertical={false} stroke="#e5e7eb" strokeDasharray="3 3" />
-                  <XAxis dataKey="grade" stroke="#6b7280" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis allowDecimals={false} stroke="#6b7280" fontSize={11} tickLine={false} axisLine={false} width={20} />
+                <BarChart data={climbsPerGrade} margin={{ top: 8, right: 28, left: 0, bottom: 0 }}>
+                  <defs>
+                    {climbsPerGrade.map((row) => {
+                      const hex = getGradeColorHex(row.grade);
+                      return (
+                        <linearGradient key={row.grade} id={`gradeGrad-${row.grade}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={hex} stopOpacity={1} />
+                          <stop offset="100%" stopColor={hex} stopOpacity={0.55} />
+                        </linearGradient>
+                      );
+                    })}
+                  </defs>
+                  <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 3" />
+                  <XAxis dataKey="grade" stroke="#334155" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis allowDecimals={false} stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} width={20} />
                   <Tooltip
-                    contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8 }}
+                    contentStyle={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8 }}
                     labelStyle={{ color: '#111827' }}
-                    cursor={{ fill: '#f3f4f6' }}
+                    cursor={{ fill: '#f8fafc' }}
                   />
-                  <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {climbsPerGrade.length > 1 && (
+                    <ReferenceLine
+                      y={avgPerGrade}
+                      stroke="#94a3b8"
+                      strokeDasharray="4 4"
+                      label={{ value: 'avg', position: 'right', fill: '#94a3b8', fontSize: 10 }}
+                    />
+                  )}
+                  <Bar dataKey="count" radius={[8, 8, 0, 0]}>
                     {climbsPerGrade.map((row) => (
-                      <Cell key={row.grade} fill={getGradeColorHex(row.grade)} stroke={GRADE_SWATCH_BORDER} />
+                      <Cell key={row.grade} fill={`url(#gradeGrad-${row.grade})`} stroke={GRADE_SWATCH_BORDER} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -336,12 +471,20 @@ export function Dashboard() {
             )}
           </section>
 
-          <section className="card-light">
+          <section className="card-light flex-1 flex flex-col">
             <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
               <Target className="w-4 h-4 text-brand-600" />
               Current goals
             </h2>
-            <p className="text-gray-500 text-sm">Goal tracking is coming soon.</p>
+            <div className="flex-1 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 p-5 text-center">
+              <div className="w-10 h-10 mx-auto rounded-full bg-brand-50 flex items-center justify-center mb-2">
+                <Target className="w-5 h-5 text-brand-600" />
+              </div>
+              <p className="text-sm font-medium text-gray-700">Goal tracking is coming soon</p>
+              <p className="text-xs text-gray-400 mt-1">
+                Set monthly grade targets and watch your progress bar fill in as you send.
+              </p>
+            </div>
           </section>
         </div>
       </div>

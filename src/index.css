@@ -42,7 +42,7 @@
   /* Light-theme counterparts, used for the main content area (everything
      except the header/sidebar chrome, which stays dark). */
   .card-light {
-    @apply bg-white rounded-xl border border-gray-200 p-5 shadow-sm;
+    @apply bg-white rounded-xl border border-slate-200 p-5 shadow-sm;
   }
 
   .input-field-light {
