@@ -6,6 +6,7 @@ export interface UserProfile {
   username_confirmed: boolean;
   profile_bio: string | null;
   avatar_url: string | null;
+  home_gym_id: number | null;
   created_at: string;
 }
 

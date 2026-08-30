@@ -2,20 +2,27 @@ import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState, type ReactNode } from 'react';
 import { supabase } from '../../lib/supabase';
 import type { GymMembership, UserProfile } from '../../types';
-import { AuthContext } from './context';
+import { AuthContext, type HomeGymSummary } from './context';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [gymMemberships, setGymMemberships] = useState<GymMembership[]>([]);
+  const [homeGym, setHomeGymState] = useState<HomeGymSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
   async function loadProfile(userId: string) {
     const [{ data: profileData }, { data: membershipData }] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', userId).single(),
+      supabase
+        .from('profiles')
+        .select('*, home_gym:gyms!home_gym_id(id, gym_name, slug)')
+        .eq('id', userId)
+        .single(),
       supabase.from('gym_memberships').select('*, gym:gyms(*)').eq('user_id', userId),
     ]);
-    setProfile(profileData as UserProfile | null);
+    const row = profileData as (UserProfile & { home_gym: HomeGymSummary | null }) | null;
+    setProfile(row as UserProfile | null);
+    setHomeGymState(row?.home_gym ?? null);
     setGymMemberships((membershipData as GymMembership[] | null) ?? []);
   }
 
@@ -54,9 +61,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function setHomeGym(gymId: number | null) {
+    if (!session?.user) return;
+    const { error } = await supabase.from('profiles').update({ home_gym_id: gymId }).eq('id', session.user.id);
+    if (error) throw error;
+    await loadProfile(session.user.id);
+  }
+
   return (
     <AuthContext.Provider
-      value={{ session, user: session?.user ?? null, profile, gymMemberships, loading, signOut, refreshProfile }}
+      value={{
+        session,
+        user: session?.user ?? null,
+        profile,
+        gymMemberships,
+        homeGym,
+        loading,
+        signOut,
+        refreshProfile,
+        setHomeGym,
+      }}
     >
       {children}
     </AuthContext.Provider>

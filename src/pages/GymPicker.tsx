@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { Mountain, Search } from 'lucide-react';
-import { useState } from 'react';
+import { Mountain, Search, Star } from 'lucide-react';
+import { useState, type MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/auth';
 import { supabase } from '../lib/supabase';
 
 interface GymOption {
@@ -16,6 +17,8 @@ interface GymOption {
 
 export function GymPicker() {
   const [query, setQuery] = useState('');
+  const { homeGym, setHomeGym } = useAuth();
+  const [favoriting, setFavoriting] = useState<number | null>(null);
 
   const { data: gyms, isLoading } = useQuery({
     queryKey: ['gyms'],
@@ -28,6 +31,17 @@ export function GymPicker() {
       return data as GymOption[];
     },
   });
+
+  async function handleToggleFavorite(e: MouseEvent, gymId: number) {
+    e.preventDefault();
+    e.stopPropagation();
+    setFavoriting(gymId);
+    try {
+      await setHomeGym(homeGym?.id === gymId ? null : gymId);
+    } finally {
+      setFavoriting(null);
+    }
+  }
 
   const q = query.trim().toLowerCase();
   const matches = (gyms ?? []).filter(
@@ -78,6 +92,21 @@ export function GymPicker() {
               )}
 
               <div className="absolute inset-0 bg-black/20 transition-colors duration-200 group-hover:bg-black/35" />
+
+              <button
+                type="button"
+                onClick={(e) => handleToggleFavorite(e, gym.id)}
+                disabled={favoriting === gym.id}
+                title={homeGym?.id === gym.id ? 'Remove as home gym' : 'Set as home gym'}
+                aria-label={homeGym?.id === gym.id ? 'Remove as home gym' : 'Set as home gym'}
+                className="absolute top-2 right-2 z-10 w-7 h-7 rounded-full bg-black/30 hover:bg-black/50 flex items-center justify-center transition-colors disabled:opacity-50"
+              >
+                <Star
+                  className={`w-3.5 h-3.5 ${
+                    homeGym?.id === gym.id ? 'fill-amber-400 text-amber-400' : 'text-white'
+                  }`}
+                />
+              </button>
 
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-2 text-center">
                 <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full overflow-hidden bg-white shrink-0 flex items-center justify-center shadow-sm">
