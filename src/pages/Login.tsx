@@ -82,19 +82,20 @@ export function Login() {
 
         {error && <ErrorAlert message={error} light />}
 
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex justify-end">
           <Link to="/forgot-password" className="text-sm font-medium text-brand-600 hover:underline">
             Forgot Password?
           </Link>
-          <button
-            type="submit"
-            className="btn-primary rounded-full px-8 flex items-center gap-2 shrink-0"
-            disabled={submitting}
-          >
-            {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-            {submitting ? 'Logging in…' : 'Login'}
-          </button>
         </div>
+
+        <button
+          type="submit"
+          className="btn-primary w-full rounded-full flex items-center justify-center gap-2"
+          disabled={submitting}
+        >
+          {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+          {submitting ? 'Logging in…' : 'Login'}
+        </button>
       </form>
 
       <div className="flex items-center justify-center gap-2 mt-10 text-sm text-gray-500">
