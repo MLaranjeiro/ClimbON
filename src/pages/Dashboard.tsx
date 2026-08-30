@@ -214,7 +214,7 @@ export function Dashboard() {
       muted: weeklyStreak === 0,
     },
     {
-      label: 'Active Gym',
+      label: 'Home Gym',
       value: activeGym ?? '—',
       icon: MapPin,
       tint: 'bg-teal-50 border-teal-100',
