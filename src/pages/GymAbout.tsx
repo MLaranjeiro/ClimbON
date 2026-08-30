@@ -10,11 +10,13 @@ export function GymAbout() {
   if (!gym) return <p className="text-gray-500 text-sm">Gym not found.</p>;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">About {gym.gym_name}</h1>
+    <div className="max-w-[1400px] mx-auto">
+      <div className="max-w-2xl space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">About {gym.gym_name}</h1>
+        </div>
+        <GymAboutContent gymId={gym.id} />
       </div>
-      <GymAboutContent gymId={gym.id} />
     </div>
   );
 }

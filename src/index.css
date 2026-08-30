@@ -3,6 +3,10 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scrollbar-gutter: stable;
+  }
+
   body {
     @apply bg-surface-900 text-white m-0;
     font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
