@@ -33,7 +33,7 @@ export function AuthLayout() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center bg-white px-6 py-16">
+      <div className="flex-1 flex flex-col justify-center items-center bg-white px-6 py-12">
         <div className="w-full max-w-sm">
           <div className="flex items-center justify-center gap-2 text-2xl font-bold text-gray-900 mb-8">
             <img src={icon} alt="" className="w-7 h-7" />
@@ -67,7 +67,9 @@ export function AuthLayout() {
             )}
           </div>
 
-          <Outlet />
+          <div className="min-h-[360px]">
+            <Outlet />
+          </div>
         </div>
       </div>
     </div>
