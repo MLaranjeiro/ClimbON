@@ -98,18 +98,21 @@ export function Login() {
         </button>
       </form>
 
-      <div className="flex items-center justify-center gap-2 mt-10 text-sm text-gray-500">
-        <span>Or Login With</span>
-        <button
-          type="button"
-          onClick={handleGoogleSignIn}
-          disabled={googleLoading}
-          className="flex items-center gap-1.5 font-medium text-gray-700 hover:text-gray-900 disabled:opacity-50"
-        >
-          {googleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FcGoogle className="w-4 h-4" />}
-          Google
-        </button>
+      <div className="flex items-center gap-3 mt-8 text-xs font-medium text-gray-400">
+        <div className="h-px flex-1 bg-gray-200" />
+        <span>OR</span>
+        <div className="h-px flex-1 bg-gray-200" />
       </div>
+
+      <button
+        type="button"
+        onClick={handleGoogleSignIn}
+        disabled={googleLoading}
+        className="w-full mt-6 flex items-center justify-center gap-2 rounded-full border border-gray-200 py-2.5 font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+      >
+        {googleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FcGoogle className="w-4 h-4" />}
+        {googleLoading ? 'Redirecting…' : 'Continue with Google'}
+      </button>
     </>
   );
 }
