@@ -87,6 +87,14 @@ function formatRelativeDate(dateStr: string): string {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
+function getStatValueClass(value: string | number, muted?: boolean): string {
+  if (muted) return 'text-sm font-semibold text-gray-400 truncate';
+  const length = String(value).length;
+  if (length > 14) return 'text-lg font-extrabold tracking-tight text-gray-900 truncate';
+  if (length > 10) return 'text-2xl font-extrabold tracking-tight text-gray-900 truncate';
+  return 'text-3xl font-extrabold tracking-tight text-gray-900 truncate';
+}
+
 function getGradeSolidBadgeProps(grade: RouteGrade): { className: string; style?: CSSProperties } {
   if (grade === 'V0') {
     return { className: 'bg-slate-100 text-slate-700' };
@@ -253,11 +261,8 @@ export function Dashboard() {
                 <span className="text-xs font-medium text-gray-600">{label}</span>
               </div>
               <div
-                className={
-                  muted
-                    ? 'text-sm font-semibold text-gray-400 truncate'
-                    : 'text-3xl font-extrabold tracking-tight text-gray-900 truncate'
-                }
+                className={getStatValueClass(value, muted)}
+                title={typeof value === 'string' ? value : undefined}
               >
                 {value}
               </div>

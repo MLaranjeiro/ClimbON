@@ -18,9 +18,9 @@ export function HomeGymNav() {
       </NavLink>
 
       {homeGym && (
-        <NavLink to={`/routes/${homeGym.slug}`} className={navLinkClasses}>
+        <NavLink to={`/routes/${homeGym.slug}`} className={navLinkClasses} title={homeGym.gym_name}>
           <MapPin className="w-4 h-4 shrink-0" />
-          <span className="max-w-[9rem] truncate">{homeGym.gym_name}</span>
+          <span className="max-w-[12rem] truncate">{homeGym.gym_name}</span>
         </NavLink>
       )}
     </>
