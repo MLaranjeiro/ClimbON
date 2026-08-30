@@ -1,6 +1,7 @@
-import { Loader2, Mountain, User } from 'lucide-react';
+import { Loader2, User } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Navigate } from 'react-router-dom';
+import icon from '../assets/climbon-icon.png';
 import { AuthField } from '../components/AuthField';
 import { ErrorAlert } from '../components/ErrorAlert';
 import { useAuth } from '../context/auth';
@@ -45,7 +46,7 @@ export function ChooseUsername() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-white px-6 py-16">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-2 text-2xl font-bold text-gray-900 mb-2">
-          <Mountain className="w-7 h-7 text-brand-600" />
+          <img src={icon} alt="" className="w-7 h-7" />
           ClimbON
         </div>
         <h1 className="text-lg font-semibold text-gray-900 text-center mb-1">Choose a username</h1>
