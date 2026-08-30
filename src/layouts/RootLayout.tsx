@@ -30,7 +30,7 @@ export function RootLayout() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-100">
       <header className="sticky top-0 z-10 bg-surface-900 border-b border-surface-700">
         <div className="flex items-center gap-6 max-w-[1400px] mx-auto px-4 h-16">
           <Link to="/" className="flex items-center gap-2 shrink-0">
@@ -68,7 +68,7 @@ export function RootLayout() {
           </div>
         </div>
       </header>
-      <main className="flex-1 overflow-y-auto bg-gray-50 px-6 py-8">
+      <main className="flex-1 overflow-y-auto bg-gray-100 px-6 py-8">
         <Outlet />
       </main>
     </div>
