@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthField } from '../components/AuthField';
 import { ErrorAlert } from '../components/ErrorAlert';
+import { getErrorMessage, logError } from '../lib/errors';
 import { supabase } from '../lib/supabase';
 import { validatePassword } from '../lib/validation';
 
@@ -28,7 +29,8 @@ export function ResetPassword() {
     setSubmitting(false);
 
     if (updateError) {
-      setError(updateError.message);
+      setError(getErrorMessage(updateError));
+      logError('reset-password.update', updateError);
       return;
     }
 

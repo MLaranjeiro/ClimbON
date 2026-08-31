@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ImagePlus, Loader2, X } from 'lucide-react';
 import { useRef, useState, type ChangeEvent, type FormEvent, type MouseEvent } from 'react';
+import { getErrorMessage, logError } from '../lib/errors';
 import { GRADE_SWATCH_BORDER, getGradeColorHex, getGradePinBorderHex } from '../lib/grades';
 import { GYM_AMENITIES } from '../lib/gymAmenities';
 import { supabase } from '../lib/supabase';
@@ -143,7 +144,8 @@ export function GymProfileEditor({ gymId }: { gymId: number }) {
       const url = await uploadAsset(file, 'logo');
       updateForm({ logoUrl: url });
     } catch (err) {
-      setLogoError(err instanceof Error ? err.message : 'Upload failed.');
+      setLogoError(getErrorMessage(err, 'Upload failed.'));
+      logError('gym-profile.logo-upload', err, { gymId });
     }
     setLogoUploading(false);
   }
@@ -158,7 +160,8 @@ export function GymProfileEditor({ gymId }: { gymId: number }) {
       const url = await uploadAsset(file, 'cover');
       updateForm({ coverImageUrl: url });
     } catch (err) {
-      setCoverError(err instanceof Error ? err.message : 'Upload failed.');
+      setCoverError(getErrorMessage(err, 'Upload failed.'));
+      logError('gym-profile.cover-upload', err, { gymId });
     }
     setCoverUploading(false);
   }
@@ -173,7 +176,8 @@ export function GymProfileEditor({ gymId }: { gymId: number }) {
       const url = await uploadAsset(file, 'map');
       updateForm({ mapImageUrl: url });
     } catch (err) {
-      setMapError(err instanceof Error ? err.message : 'Upload failed.');
+      setMapError(getErrorMessage(err, 'Upload failed.'));
+      logError('gym-profile.map-upload', err, { gymId });
     }
     setMapUploading(false);
   }
@@ -203,7 +207,8 @@ export function GymProfileEditor({ gymId }: { gymId: number }) {
     setSaving(false);
 
     if (error) {
-      setSaveError(error.message);
+      setSaveError(getErrorMessage(error));
+      logError('gym-profile.save', error, { gymId });
       return;
     }
 
@@ -223,7 +228,8 @@ export function GymProfileEditor({ gymId }: { gymId: number }) {
     setPlacingRouteId(null);
 
     if (error) {
-      setPlaceError(error.message);
+      setPlaceError(getErrorMessage(error));
+      logError('gym-profile.place-route', error, { gymId, routeId: placingRouteId });
       return;
     }
 

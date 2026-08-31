@@ -2,6 +2,7 @@ import { AtSign, Loader2 } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { AuthField } from '../components/AuthField';
 import { ErrorAlert } from '../components/ErrorAlert';
+import { getErrorMessage, logError } from '../lib/errors';
 import { supabase } from '../lib/supabase';
 
 export function ForgotPassword() {
@@ -21,7 +22,8 @@ export function ForgotPassword() {
     setSubmitting(false);
 
     if (resetError) {
-      setError(resetError.message);
+      setError(getErrorMessage(resetError));
+      logError('forgot-password.request', resetError, { email });
       return;
     }
 

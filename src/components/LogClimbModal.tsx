@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, Video, X } from 'lucide-react';
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useAuth } from '../context/auth';
+import { getErrorMessage, logError } from '../lib/errors';
 import { GRADE_ORDER, getGradeBadgeClasses, gradeFromRatingValue, gradeToRatingValue } from '../lib/grades';
 import { supabase } from '../lib/supabase';
 import type { RouteGrade } from '../types';
@@ -77,7 +78,8 @@ export function LogClimbModal({ routeId, routeName, grade, sectionName, onClose 
 
     if (uploadError) {
       setVideoUploading(false);
-      setError(uploadError.message);
+      setError(getErrorMessage(uploadError, 'Upload failed.'));
+      logError('log-climb.video-upload', uploadError, { routeId, userId: user.id });
       return;
     }
 
@@ -106,25 +108,28 @@ export function LogClimbModal({ routeId, routeName, grade, sectionName, onClose 
       );
 
     if (sendError) {
-      setError(sendError.message);
+      setError(getErrorMessage(sendError));
+      logError('log-climb.submit', sendError, { routeId, userId: user.id });
       setSubmitting(false);
       return;
     }
 
-    await supabase
+    const { error: ratingError } = await supabase
       .from('difficulty_ratings')
       .upsert(
         { route_id: routeId, user_id: user.id, grade: gradeToRatingValue(suggestedGrade) },
         { onConflict: 'route_id,user_id' },
       );
+    if (ratingError) logError('log-climb.rating-upsert', ratingError, { routeId, userId: user.id });
 
     if (notes.trim() || videoUrl.trim()) {
-      await supabase.from('beta').insert({
+      const { error: betaError } = await supabase.from('beta').insert({
         route_id: routeId,
         user_id: user.id,
         description_text: notes.trim() || null,
         video_url: videoUrl.trim() || null,
       });
+      if (betaError) logError('log-climb.beta-insert', betaError, { routeId, userId: user.id });
     }
 
     await Promise.all([

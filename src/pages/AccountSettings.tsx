@@ -2,6 +2,7 @@ import { Camera, Eye, EyeOff, Loader2, Pencil } from 'lucide-react';
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { ErrorAlert } from '../components/ErrorAlert';
 import { useAuth } from '../context/auth';
+import { getErrorMessage, logError } from '../lib/errors';
 import { supabase } from '../lib/supabase';
 import { validatePassword } from '../lib/validation';
 
@@ -64,7 +65,8 @@ export function AccountSettings() {
 
     if (uploadError) {
       setAvatarUploading(false);
-      setAvatarError(uploadError.message);
+      setAvatarError(getErrorMessage(uploadError, 'Upload failed.'));
+      logError('account-settings.avatar-upload', uploadError, { userId: profile.id });
       return;
     }
 
@@ -78,7 +80,8 @@ export function AccountSettings() {
     setAvatarUploading(false);
 
     if (updateError) {
-      setAvatarError(updateError.message);
+      setAvatarError(getErrorMessage(updateError));
+      logError('account-settings.avatar-update', updateError, { userId: profile.id });
       return;
     }
 
@@ -98,7 +101,8 @@ export function AccountSettings() {
     setAvatarUploading(false);
 
     if (updateError) {
-      setAvatarError(updateError.message);
+      setAvatarError(getErrorMessage(updateError));
+      logError('account-settings.avatar-remove', updateError, { userId: profile.id });
       return;
     }
 
@@ -131,7 +135,8 @@ export function AccountSettings() {
     setSavingField(false);
 
     if (error) {
-      setFieldError(error.code === '23505' ? 'That username is already taken.' : error.message);
+      setFieldError(error.code === '23505' ? 'That username is already taken.' : getErrorMessage(error));
+      logError('account-settings.field-save', error, { userId: profile.id, field: editingField });
       return;
     }
 
@@ -196,7 +201,8 @@ export function AccountSettings() {
     setChangingPassword(false);
 
     if (updateError) {
-      setPasswordError(updateError.message);
+      setPasswordError(getErrorMessage(updateError));
+      logError('account-settings.password-change', updateError, { userId: user.id });
       return;
     }
 

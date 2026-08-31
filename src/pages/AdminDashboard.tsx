@@ -15,6 +15,7 @@ import { useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'rea
 import { Avatar } from '../components/Avatar';
 import { ErrorAlert } from '../components/ErrorAlert';
 import { useAuth } from '../context/auth';
+import { getErrorMessage, logError } from '../lib/errors';
 import { compareGrades, GRADE_ORDER, getGradeBadgeClasses } from '../lib/grades';
 import { isGymAdmin } from '../lib/permissions';
 import { ROUTE_STYLES } from '../lib/routeStyles';
@@ -198,7 +199,8 @@ export function AdminDashboard() {
     setAddingUserId(null);
 
     if (error) {
-      setAddMemberError(error.code === '23505' ? 'That user already has a role at this gym.' : error.message);
+      setAddMemberError(error.code === '23505' ? 'That user already has a role at this gym.' : getErrorMessage(error));
+      logError('admin-dashboard.add-member', error, { gymId: effectiveGymId, targetUserId: userId });
       return;
     }
 
@@ -274,7 +276,8 @@ export function AdminDashboard() {
 
     if (uploadError) {
       setImageUploading(false);
-      setImageError(uploadError.message);
+      setImageError(getErrorMessage(uploadError, 'Upload failed.'));
+      logError('admin-dashboard.route-image-upload', uploadError, { gymId: form.gymId });
       return;
     }
 
@@ -315,7 +318,11 @@ export function AdminDashboard() {
     setSaving(false);
 
     if (error) {
-      setFormError(error.message);
+      setFormError(getErrorMessage(error));
+      logError('admin-dashboard.route-save', error, {
+        gymId: form.gymId,
+        formTarget: formTarget === 'new' ? 'new' : (formTarget as RouteRow).id,
+      });
       return;
     }
 
@@ -330,6 +337,8 @@ export function AdminDashboard() {
     setStatusUpdatingId(null);
     if (!error) {
       await queryClient.invalidateQueries({ queryKey: ['admin-routes', effectiveGymId] });
+    } else {
+      logError('admin-dashboard.route-status-toggle', error, { routeId: route.id, nextStatus });
     }
   }
 
@@ -345,8 +354,9 @@ export function AdminDashboard() {
       setDeleteError(
         error.code === '23503'
           ? 'This route can’t be deleted because people have already logged sends or beta on it. Deactivate it instead.'
-          : error.message,
+          : getErrorMessage(error),
       );
+      logError('admin-dashboard.route-delete', error, { routeId: route.id });
       return;
     }
 
@@ -362,6 +372,8 @@ export function AdminDashboard() {
       if (member.user_id === user?.id) {
         await refreshProfile();
       }
+    } else {
+      logError('admin-dashboard.revoke-member', error, { gymId: effectiveGymId, membershipId: member.id });
     }
   }
 

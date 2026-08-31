@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AuthProvider } from './context/auth';
 import { AuthLayout } from './layouts/AuthLayout';
@@ -27,50 +28,52 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="welcome" element={<ChooseUsername />} />
-            <Route element={<AuthLayout />}>
-              <Route path="login" element={<Login />} />
-              <Route path="register" element={<Register />} />
-              <Route path="forgot-password" element={<ForgotPassword />} />
-              <Route path="reset-password" element={<ResetPassword />} />
-            </Route>
-            <Route
-              element={
-                <ProtectedRoute>
-                  <RootLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Dashboard />} />
-              <Route path="account" element={<AccountSettings />} />
-              <Route path="routes" element={<GymPicker />} />
-              <Route path="routes/:gymSlug" element={<GymOverview />} />
-              <Route path="routes/:gymSlug/map" element={<GymMap />} />
-              <Route path="routes/:gymSlug/about" element={<GymAbout />} />
-              <Route path="routes/:gymSlug/sections/:sectionId" element={<SectionClimbs />} />
-              <Route path="routes/:gymSlug/climbs/:routeId" element={<RouteDetail />} />
+        <ErrorBoundary>
+          <BrowserRouter>
+            <Routes>
+              <Route path="welcome" element={<ChooseUsername />} />
+              <Route element={<AuthLayout />}>
+                <Route path="login" element={<Login />} />
+                <Route path="register" element={<Register />} />
+                <Route path="forgot-password" element={<ForgotPassword />} />
+                <Route path="reset-password" element={<ResetPassword />} />
+              </Route>
               <Route
-                path="admin"
                 element={
-                  <ProtectedRoute requireGymRole>
-                    <AdminDashboard />
+                  <ProtectedRoute>
+                    <RootLayout />
                   </ProtectedRoute>
                 }
-              />
-              <Route
-                path="platform/gyms"
-                element={
-                  <ProtectedRoute requirePlatformAdmin>
-                    <PlatformGyms />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="*" element={<NotFound />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
+              >
+                <Route index element={<Dashboard />} />
+                <Route path="account" element={<AccountSettings />} />
+                <Route path="routes" element={<GymPicker />} />
+                <Route path="routes/:gymSlug" element={<GymOverview />} />
+                <Route path="routes/:gymSlug/map" element={<GymMap />} />
+                <Route path="routes/:gymSlug/about" element={<GymAbout />} />
+                <Route path="routes/:gymSlug/sections/:sectionId" element={<SectionClimbs />} />
+                <Route path="routes/:gymSlug/climbs/:routeId" element={<RouteDetail />} />
+                <Route
+                  path="admin"
+                  element={
+                    <ProtectedRoute requireGymRole>
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="platform/gyms"
+                  element={
+                    <ProtectedRoute requirePlatformAdmin>
+                      <PlatformGyms />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="*" element={<NotFound />} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </ErrorBoundary>
       </AuthProvider>
     </QueryClientProvider>
   );

@@ -4,6 +4,7 @@ import { FcGoogle } from 'react-icons/fc';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthField } from '../components/AuthField';
 import { ErrorAlert } from '../components/ErrorAlert';
+import { getErrorMessage, logError } from '../lib/errors';
 import { getHomeRoute } from '../lib/getHomeRoute';
 import { supabase } from '../lib/supabase';
 
@@ -27,7 +28,8 @@ export function Login() {
 
     if (oauthError) {
       setGoogleLoading(false);
-      setError(oauthError.message);
+      setError(getErrorMessage(oauthError));
+      logError('login.google-oauth', oauthError);
     }
     // On success the browser navigates to Google, so there's nothing else to do here.
   }
@@ -41,7 +43,7 @@ export function Login() {
 
     if (signInError || !data.user) {
       setSubmitting(false);
-      setError(signInError?.message ?? 'Something went wrong. Please try again.');
+      setError(signInError ? getErrorMessage(signInError) : 'Something went wrong. Please try again.');
       return;
     }
 

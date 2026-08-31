@@ -5,6 +5,7 @@ import icon from '../assets/climbon-icon.png';
 import { AuthField } from '../components/AuthField';
 import { ErrorAlert } from '../components/ErrorAlert';
 import { useAuth } from '../context/auth';
+import { getErrorMessage, logError } from '../lib/errors';
 import { supabase } from '../lib/supabase';
 
 export function ChooseUsername() {
@@ -35,7 +36,8 @@ export function ChooseUsername() {
     setSubmitting(false);
 
     if (updateError) {
-      setError(updateError.code === '23505' ? 'That username is already taken.' : updateError.message);
+      setError(updateError.code === '23505' ? 'That username is already taken.' : getErrorMessage(updateError));
+      logError('choose-username.save', updateError, { userId: session!.user.id });
       return;
     }
 

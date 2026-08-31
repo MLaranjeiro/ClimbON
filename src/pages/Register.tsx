@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthField } from '../components/AuthField';
 import { ErrorAlert } from '../components/ErrorAlert';
+import { getErrorMessage } from '../lib/errors';
 import { supabase } from '../lib/supabase';
 import { validatePassword } from '../lib/validation';
 
@@ -35,7 +36,7 @@ export function Register() {
     setSubmitting(false);
 
     if (signUpError) {
-      setError(signUpError.message);
+      setError(getErrorMessage(signUpError));
       return;
     }
 
