@@ -1,8 +1,20 @@
-import { CheckCircle, ChevronLeft, ChevronRight, Mountain, PlusCircle, Video, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import {
+  CheckCircle,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsUpDown,
+  ChevronUp,
+  Mountain,
+  PlusCircle,
+  Video,
+  X,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouteDetail } from '../hooks/useRouteDetail';
-import { GRADE_SWATCH_BORDER, getGradeBadgeClasses, getGradeColorHex } from '../lib/grades';
+import { useSiblingRouteStats } from '../hooks/useSiblingRouteStats';
+import { compareGrades, GRADE_SWATCH_BORDER, getGradeBadgeClasses, getGradeColorHex } from '../lib/grades';
 import type { RouteGrade } from '../types';
 import { BetaList } from './BetaList';
 import { LogClimbModal } from './LogClimbModal';
@@ -11,6 +23,8 @@ interface SiblingRoute {
   id: number;
   grade: RouteGrade;
 }
+
+type SortColumn = 'grade' | 'difficulty' | 'sends';
 
 interface RouteDetailModalProps {
   routeId: number;
@@ -22,6 +36,11 @@ interface RouteDetailModalProps {
 export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }: RouteDetailModalProps) {
   const { route, isLoading, beta, stats } = useRouteDetail(routeId);
   const [showLogClimb, setShowLogClimb] = useState(false);
+  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  const siblingIds = useMemo(() => siblingRoutes.map((r) => r.id), [siblingRoutes]);
+  const { data: siblingStats } = useSiblingRouteStats(siblingIds);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -33,11 +52,42 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose, showLogClimb]);
 
-  const currentIndex = siblingRoutes.findIndex((r) => r.id === routeId);
-  const hasSiblings = siblingRoutes.length > 0 && currentIndex !== -1;
+  const sortedSiblings = useMemo(() => {
+    if (!sortColumn) return siblingRoutes;
+    const direction = sortDirection === 'asc' ? 1 : -1;
+    return [...siblingRoutes].sort((a, b) => {
+      if (sortColumn === 'grade') return direction * compareGrades(a.grade, b.grade);
+
+      if (sortColumn === 'sends') {
+        const sendsA = siblingStats?.get(a.id)?.sendCount ?? 0;
+        const sendsB = siblingStats?.get(b.id)?.sendCount ?? 0;
+        return direction * (sendsA - sendsB);
+      }
+
+      // Difficulty rating — routes with no community ratings yet always sort to the end.
+      const avgA = siblingStats?.get(a.id)?.avgDifficulty;
+      const avgB = siblingStats?.get(b.id)?.avgDifficulty;
+      if (avgA == null && avgB == null) return 0;
+      if (avgA == null) return 1;
+      if (avgB == null) return -1;
+      return direction * (avgA - avgB);
+    });
+  }, [siblingRoutes, sortColumn, sortDirection, siblingStats]);
+
+  function toggleSort(column: SortColumn) {
+    if (sortColumn === column) {
+      setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortColumn(column);
+      setSortDirection(column === 'grade' ? 'asc' : 'desc');
+    }
+  }
+
+  const currentIndex = sortedSiblings.findIndex((r) => r.id === routeId);
+  const hasSiblings = sortedSiblings.length > 0 && currentIndex !== -1;
 
   function goTo(index: number) {
-    const target = siblingRoutes[index];
+    const target = sortedSiblings[index];
     if (target) onNavigate(target.id);
   }
 
@@ -64,7 +114,7 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <div className="flex items-center gap-1.5 overflow-x-auto px-1 py-1 min-w-0">
-                    {siblingRoutes.map((sibling, i) => (
+                    {sortedSiblings.map((sibling, i) => (
                       <button
                         key={sibling.id}
                         type="button"
@@ -80,13 +130,13 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
                   <button
                     type="button"
                     onClick={() => goTo(currentIndex + 1)}
-                    disabled={currentIndex === siblingRoutes.length - 1}
+                    disabled={currentIndex === sortedSiblings.length - 1}
                     className="p-1 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 disabled:hover:bg-transparent shrink-0"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
                   <span className="text-xs text-gray-400 shrink-0">
-                    {currentIndex + 1} / {siblingRoutes.length}
+                    {currentIndex + 1} / {sortedSiblings.length}
                   </span>
                 </>
               )}
@@ -99,6 +149,39 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
               <X className="w-4 h-4" />
             </button>
           </div>
+
+          {hasSiblings && (
+            <div className="flex items-center gap-3 px-4 py-2 border-b border-gray-100 text-xs">
+              <span className="text-gray-400 font-medium shrink-0">Sort:</span>
+              {(
+                [
+                  ['grade', 'Grade'],
+                  ['difficulty', 'Rating'],
+                  ['sends', 'Sends'],
+                ] as const
+              ).map(([column, label]) => (
+                <button
+                  key={column}
+                  type="button"
+                  onClick={() => toggleSort(column)}
+                  className={`flex items-center gap-1 font-medium ${
+                    sortColumn === column ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {label}
+                  {sortColumn === column ? (
+                    sortDirection === 'asc' ? (
+                      <ChevronUp className="w-3.5 h-3.5" />
+                    ) : (
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    )
+                  ) : (
+                    <ChevronsUpDown className="w-3.5 h-3.5 text-gray-300" />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="p-5">
             {isLoading || !route ? (
