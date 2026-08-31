@@ -3,7 +3,7 @@ import { useEffect, type MouseEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 interface ModalShellProps {
-  title: string;
+  title?: string;
   onClose: () => void;
   children: ReactNode;
   maxWidthClass?: string;
@@ -28,7 +28,7 @@ export function ModalShell({ title, onClose, children, maxWidthClass = 'max-w-2x
       <div className="flex min-h-full items-center justify-center px-4 py-10">
         <div className={`w-full ${maxWidthClass} rounded-xl bg-white shadow-xl`} onClick={stop}>
           <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-3">
-            <h2 className="text-lg font-bold text-gray-900">{title}</h2>
+            {title && <h2 className="text-lg font-bold text-gray-900">{title}</h2>}
             {headerExtra}
             <button
               type="button"

@@ -66,7 +66,7 @@ export function GymMapViewer({ imageUrl, children }: GymMapViewerProps) {
     <div className="relative">
       <div
         ref={containerRef}
-        className={`overflow-hidden rounded-xl border border-gray-200 bg-gray-100 ${
+        className={`flex items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-gray-100 ${
           scale > 1 ? 'cursor-grab active:cursor-grabbing' : ''
         }`}
         onWheel={handleWheel}
@@ -76,10 +76,18 @@ export function GymMapViewer({ imageUrl, children }: GymMapViewerProps) {
         onPointerLeave={handlePointerUp}
       >
         <div
-          className="relative w-full origin-top-left"
+          className="relative origin-top-left"
           style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})` }}
         >
-          <img src={imageUrl} alt="" className="w-full select-none pointer-events-none" draggable={false} />
+          {/* A definite height (not max-height) so small map images scale UP to fill the
+              available space too, not just shrink down when oversized. max-w-full is the
+              fallback for wide images so we still never overflow the modal horizontally. */}
+          <img
+            src={imageUrl}
+            alt=""
+            className="block h-[70vh] w-auto max-w-full select-none pointer-events-none"
+            draggable={false}
+          />
           {children}
         </div>
       </div>
