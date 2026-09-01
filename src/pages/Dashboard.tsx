@@ -96,7 +96,7 @@ function getStatValueClass(value: string | number, muted?: boolean): string {
 
 function getGradeSolidBadgeProps(grade: RouteGrade): { className: string; style?: CSSProperties } {
   if (grade === 'V0') {
-    return { className: 'bg-slate-100 text-slate-700' };
+    return { className: 'bg-slate-100 text-slate-700 border border-slate-200' };
   }
   return { className: 'text-white', style: { backgroundColor: getGradeColorHex(grade) } };
 }
