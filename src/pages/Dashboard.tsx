@@ -259,7 +259,7 @@ export function Dashboard() {
           </div>
         </div>
 
-        <div className="relative -mt-10 sm:-mt-12 mx-4 sm:mx-6 mb-4 sm:mb-6 rounded-xl bg-white border border-slate-200 shadow-md grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 sm:p-5">
+        <div className="relative -mt-10 sm:-mt-12 mx-4 sm:mx-6 mb-4 sm:mb-6 rounded-xl bg-white border border-slate-200 shadow-lg shadow-black/20 grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 sm:p-5">
           {statTiles.map(({ label, value, icon: Icon, tint, iconTint, chipBg, muted }) => (
             <div key={label} className={`flex flex-col justify-between rounded-xl border p-4 ${tint}`}>
               <div className="flex items-center gap-2 mb-2">
