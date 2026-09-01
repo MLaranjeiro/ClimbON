@@ -388,8 +388,8 @@ export function Dashboard() {
           </section>
         </div>
 
-        <div className="flex flex-col gap-6 lg:sticky lg:top-6">
-          <section className="card-light">
+        <section className="card-light flex flex-col lg:sticky lg:top-6">
+          <div>
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">This Week</h3>
             <dl className="space-y-2 mb-4">
               <div className="flex items-center justify-between text-sm">
@@ -415,9 +415,9 @@ export function Dashboard() {
                 <dd className="font-semibold text-gray-900">{highestGradeThisMonth ?? '—'}</dd>
               </div>
             </dl>
-          </section>
+          </div>
 
-          <section className="card-light">
+          <div className="pt-6 mt-6 border-t border-gray-200">
             <h2 className="text-lg font-bold text-gray-900 mb-3">Recent activity</h2>
             {sendsLoading ? (
               <p className="text-gray-500 text-sm">Loading…</p>
@@ -489,9 +489,9 @@ export function Dashboard() {
                 })}
               </div>
             )}
-          </section>
+          </div>
 
-          <section className="card-light flex-1 flex flex-col">
+          <div className="pt-6 mt-6 border-t border-gray-200 flex-1 flex flex-col">
             <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
               <Target className="w-4 h-4 text-brand-600" />
               Current goals
@@ -505,8 +505,8 @@ export function Dashboard() {
                 Set monthly grade targets and watch your progress bar fill in as you send.
               </p>
             </div>
-          </section>
-        </div>
+          </div>
+        </section>
       </div>
     </div>
   );
