@@ -10,7 +10,6 @@ import {
   Target,
   Trophy,
   Video,
-  Zap,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -429,23 +428,22 @@ export function Dashboard() {
                 {sends.slice(0, 5).map((send) => {
                   const rowContent = (
                     <>
-                      <div className="w-8 h-8 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
-                        <Zap className="w-4 h-4 text-brand-600" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 min-w-0">
-                          {send.route?.grade && (
-                            <span
-                              className={`badge shrink-0 rounded-md ${getGradeSolidBadgeProps(send.route.grade).className}`}
-                              style={getGradeSolidBadgeProps(send.route.grade).style}
-                            >
-                              {send.route.grade}
-                            </span>
-                          )}
-                          <p className="text-sm font-semibold text-gray-900 truncate">
-                            {send.route?.route_name ?? 'Unknown route'}
-                          </p>
+                      {send.route?.grade ? (
+                        <span
+                          className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${getGradeSolidBadgeProps(send.route.grade).className}`}
+                          style={getGradeSolidBadgeProps(send.route.grade).style}
+                        >
+                          {send.route.grade}
+                        </span>
+                      ) : (
+                        <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0 text-xs text-gray-400">
+                          —
                         </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">
+                          {send.route?.route_name ?? 'Unknown route'}
+                        </p>
                         {send.route?.styles && send.route.styles.length > 0 && (
                           <div className="flex flex-wrap items-center gap-1.5 mt-1">
                             {send.route.styles.slice(0, 2).map((style) => (
