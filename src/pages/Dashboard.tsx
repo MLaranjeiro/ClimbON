@@ -185,6 +185,7 @@ export function Dashboard() {
   const statTiles: {
     label: string;
     value: string | number;
+    caption?: string;
     icon: typeof Trophy;
     tint: string;
     iconTint: string;
@@ -209,7 +210,8 @@ export function Dashboard() {
     },
     {
       label: 'Current Streak',
-      value: weeklyStreak > 0 ? `${weeklyStreak} wk${weeklyStreak > 1 ? 's' : ''}` : 'Start today!',
+      value: weeklyStreak > 0 ? `${weeklyStreak} wk${weeklyStreak > 1 ? 's' : ''}` : '0 days',
+      caption: weeklyStreak === 0 ? 'Start your streak today' : undefined,
       icon: Flame,
       tint: 'bg-orange-50 border-orange-100',
       iconTint: 'text-orange-600',
@@ -268,7 +270,7 @@ export function Dashboard() {
         </div>
 
         <div className="relative -mt-10 sm:-mt-12 mx-4 sm:mx-6 mb-4 sm:mb-6 rounded-xl bg-white border border-slate-200 shadow-lg shadow-black/20 grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 sm:p-5">
-          {statTiles.map(({ label, value, icon: Icon, tint, iconTint, chipBg, muted }) => (
+          {statTiles.map(({ label, value, caption, icon: Icon, tint, iconTint, chipBg, muted }) => (
             <div key={label} className={`flex flex-col justify-between rounded-xl border p-4 ${tint}`}>
               <div className="flex items-center gap-2 mb-2">
                 <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${chipBg}`}>
@@ -282,6 +284,7 @@ export function Dashboard() {
               >
                 {value}
               </div>
+              {caption && <p className="text-xs text-gray-400 mt-0.5 truncate">{caption}</p>}
             </div>
           ))}
         </div>
