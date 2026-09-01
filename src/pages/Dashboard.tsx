@@ -167,8 +167,9 @@ export function Dashboard() {
   const climbsPerGrade = GRADE_ORDER.map((grade) => ({
     grade,
     count: grades.filter((g) => g === grade).length,
-  })).filter((row) => row.count > 0);
-  const avgPerGrade = climbsPerGrade.length > 0 ? grades.length / climbsPerGrade.length : 0;
+  }));
+  const gradesClimbedCount = climbsPerGrade.filter((row) => row.count > 0).length;
+  const avgPerGrade = gradesClimbedCount > 0 ? grades.length / gradesClimbedCount : 0;
 
   const memberSince = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
@@ -288,7 +289,7 @@ export function Dashboard() {
         <div className="space-y-6">
           <section className="card-light">
             <h2 className="text-lg font-bold text-gray-900 mb-3">Climbs per grade</h2>
-            {climbsPerGrade.length === 0 ? (
+            {grades.length === 0 ? (
               <p className="text-gray-500 text-sm">No sends logged yet.</p>
             ) : (
               <ResponsiveContainer width="100%" height={200}>
@@ -312,7 +313,7 @@ export function Dashboard() {
                     labelStyle={{ color: '#111827' }}
                     cursor={{ fill: '#f8fafc' }}
                   />
-                  {climbsPerGrade.length > 1 && (
+                  {gradesClimbedCount > 1 && (
                     <ReferenceLine
                       y={avgPerGrade}
                       stroke="#94a3b8"
