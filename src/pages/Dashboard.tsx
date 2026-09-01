@@ -242,7 +242,7 @@ export function Dashboard() {
               </div>
               <div className="min-w-0">
                 <h1 className="text-xl font-bold text-white truncate">{profile?.username}</h1>
-                <p className="text-sm text-white/60 truncate">
+                <p className="text-sm text-slate-300 truncate">
                   {roleLabel}
                   {memberSince && <> · Member since {memberSince}</>}
                 </p>
