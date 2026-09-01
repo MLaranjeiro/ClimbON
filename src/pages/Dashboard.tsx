@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import {
+  ChevronDown,
   Flame,
   MapPin,
   MessageSquare,
@@ -12,7 +13,7 @@ import {
   Video,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Avatar } from '../components/Avatar';
 import { useAuth } from '../context/auth';
 import { GRADE_ORDER, GRADE_SWATCH_BORDER, getGradeColorHex, getHighestGrade } from '../lib/grades';
@@ -44,6 +45,21 @@ function isThisMonth(dateStr: string) {
   const now = new Date();
   return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
 }
+
+function isWithinLastMonths(dateStr: string, months: number) {
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - months);
+  return new Date(dateStr) >= cutoff;
+}
+
+type GradePeriod = 'week' | 'month' | '3months' | 'all';
+
+const GRADE_PERIOD_OPTIONS: { value: GradePeriod; label: string }[] = [
+  { value: 'week', label: 'This Week' },
+  { value: 'month', label: 'This Month' },
+  { value: '3months', label: 'Last 3 Months' },
+  { value: 'all', label: 'All Time' },
+];
 
 function getWeekStart(date: Date) {
   const d = new Date(date);
@@ -103,6 +119,8 @@ function getGradeSolidBadgeProps(grade: RouteGrade): { className: string; style?
 
 export function Dashboard() {
   const { user, profile, gymMemberships, homeGym } = useAuth();
+  const [gradePeriod, setGradePeriod] = useState<GradePeriod>('month');
+  const [gradePeriodMenuOpen, setGradePeriodMenuOpen] = useState(false);
 
   const { data: sends, isLoading: sendsLoading } = useQuery({
     queryKey: ['sends', user?.id],
@@ -163,15 +181,22 @@ export function Dashboard() {
     }
   }
   const activeGym = homeGym?.gym_name ?? mostFrequentGym;
-  const highestGradeIndex = highestGrade ? GRADE_ORDER.indexOf(highestGrade) : -1;
+
+  const periodSends = (sends ?? []).filter((s) => {
+    if (gradePeriod === 'week') return isThisWeek(s.date_completed);
+    if (gradePeriod === 'month') return isThisMonth(s.date_completed);
+    if (gradePeriod === '3months') return isWithinLastMonths(s.date_completed, 3);
+    return true;
+  });
+  const chartGrades = periodSends.map((s) => s.route?.grade).filter((g): g is RouteGrade => !!g);
+  const highestChartGrade = getHighestGrade(chartGrades);
+  const highestGradeIndex = highestChartGrade ? GRADE_ORDER.indexOf(highestChartGrade) : -1;
   const chartMaxIndex =
     highestGradeIndex >= 0 ? Math.min(highestGradeIndex + 2, GRADE_ORDER.length - 1) : GRADE_ORDER.length - 1;
   const climbsPerGrade = GRADE_ORDER.slice(0, chartMaxIndex + 1).map((grade) => ({
     grade,
-    count: grades.filter((g) => g === grade).length,
+    count: chartGrades.filter((g) => g === grade).length,
   }));
-  const gradesClimbedCount = climbsPerGrade.filter((row) => row.count > 0).length;
-  const avgPerGrade = gradesClimbedCount > 0 ? grades.length / gradesClimbedCount : 0;
 
   const memberSince = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
@@ -290,12 +315,46 @@ export function Dashboard() {
       <div className="grid lg:grid-cols-[minmax(0,1fr)_340px] gap-6 items-stretch">
         <div className="space-y-6">
           <section className="card-light">
-            <h2 className="text-lg font-bold text-gray-900 mb-3">Climbs per grade</h2>
-            {grades.length === 0 ? (
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-bold text-gray-900">Grade Distribution</h2>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setGradePeriodMenuOpen((open) => !open)}
+                  className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-200 transition-colors"
+                >
+                  {GRADE_PERIOD_OPTIONS.find((o) => o.value === gradePeriod)?.label}
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </button>
+                {gradePeriodMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setGradePeriodMenuOpen(false)} />
+                    <div className="absolute right-0 top-full mt-1 w-40 rounded-lg border border-slate-200 bg-white shadow-lg py-1 z-50">
+                      {GRADE_PERIOD_OPTIONS.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => {
+                            setGradePeriod(option.value);
+                            setGradePeriodMenuOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 ${
+                            option.value === gradePeriod ? 'text-brand-600 font-semibold' : 'text-gray-700'
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+            {chartGrades.length === 0 ? (
               <p className="text-gray-500 text-sm">No sends logged yet.</p>
             ) : (
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={climbsPerGrade} margin={{ top: 8, right: 28, left: 0, bottom: 0 }}>
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={climbsPerGrade} margin={{ top: 8, right: 28, left: 0, bottom: 0 }} barSize={36}>
                   <defs>
                     {climbsPerGrade.map((row) => {
                       const hex = getGradeColorHex(row.grade);
@@ -315,17 +374,13 @@ export function Dashboard() {
                     labelStyle={{ color: '#111827' }}
                     cursor={{ fill: '#f8fafc' }}
                   />
-                  {gradesClimbedCount > 1 && (
-                    <ReferenceLine
-                      y={avgPerGrade}
-                      stroke="#94a3b8"
-                      strokeDasharray="4 4"
-                      label={{ value: 'avg', position: 'right', fill: '#94a3b8', fontSize: 10 }}
-                    />
-                  )}
                   <Bar dataKey="count" radius={[8, 8, 0, 0]}>
                     {climbsPerGrade.map((row) => (
-                      <Cell key={row.grade} fill={`url(#gradeGrad-${row.grade})`} stroke={GRADE_SWATCH_BORDER} />
+                      <Cell
+                        key={row.grade}
+                        fill={`url(#gradeGrad-${row.grade})`}
+                        stroke={row.count > 0 ? GRADE_SWATCH_BORDER : 'none'}
+                      />
                     ))}
                   </Bar>
                 </BarChart>
