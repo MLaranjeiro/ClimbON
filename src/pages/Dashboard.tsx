@@ -164,7 +164,10 @@ export function Dashboard() {
     }
   }
   const activeGym = homeGym?.gym_name ?? mostFrequentGym;
-  const climbsPerGrade = GRADE_ORDER.map((grade) => ({
+  const highestGradeIndex = highestGrade ? GRADE_ORDER.indexOf(highestGrade) : -1;
+  const chartMaxIndex =
+    highestGradeIndex >= 0 ? Math.min(highestGradeIndex + 2, GRADE_ORDER.length - 1) : GRADE_ORDER.length - 1;
+  const climbsPerGrade = GRADE_ORDER.slice(0, chartMaxIndex + 1).map((grade) => ({
     grade,
     count: grades.filter((g) => g === grade).length,
   }));
