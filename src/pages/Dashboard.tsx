@@ -231,27 +231,24 @@ export function Dashboard() {
   return (
     <div className="max-w-[1400px] mx-auto space-y-6">
       <section className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="relative bg-surface-900 px-6 sm:px-8 pt-6 sm:pt-8 pb-16 sm:pb-20 overflow-hidden">
-          <div className="absolute -top-20 -left-16 w-72 h-72 bg-brand-500/25 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -top-24 right-0 w-96 h-96 bg-brand-600/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-surface-900/60 pointer-events-none" />
+        <div className="relative bg-surface-900 px-6 sm:px-8 py-4 sm:py-5 overflow-hidden">
+          <div className="absolute -top-16 -left-10 w-48 h-48 bg-brand-500/25 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -top-16 right-0 w-56 h-56 bg-brand-600/20 rounded-full blur-3xl pointer-events-none" />
           <div
             className="absolute inset-0 pointer-events-none text-white/[0.05]"
             style={{ backgroundImage: 'radial-gradient(currentColor 1px, transparent 1px)', backgroundSize: '16px 16px' }}
           />
 
-          <div className="relative flex flex-col sm:flex-row sm:items-start gap-5">
-            <div className="flex items-center gap-4 min-w-0 sm:pr-36">
-              <div className="relative shrink-0 rounded-full">
-                <Avatar
-                  src={profile?.avatar_url}
-                  name={profile?.username}
-                  size={60}
-                  className="ring-2 ring-brand-500 ring-offset-2 ring-offset-surface-900"
-                />
-              </div>
+          <div className="relative flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4 min-w-0">
+              <Avatar
+                src={profile?.avatar_url}
+                name={profile?.username}
+                size={48}
+                className="shrink-0 ring-2 ring-brand-500 ring-offset-2 ring-offset-surface-900"
+              />
               <div className="min-w-0">
-                <h1 className="text-xl font-bold text-white truncate">{profile?.username}</h1>
+                <h1 className="text-lg font-bold text-white truncate">{profile?.username}</h1>
                 <p className="text-sm text-slate-300 truncate">
                   {roleLabel}
                   {memberSince && <> · Member since {memberSince}</>}
@@ -261,15 +258,15 @@ export function Dashboard() {
 
             <Link
               to={homeGym ? `/routes/${homeGym.slug}` : '/routes'}
-              className="inline-flex items-center justify-center gap-2 rounded-full shrink-0 bg-white text-surface-900 font-semibold py-2.5 px-5 shadow-sm hover:bg-brand-500 hover:text-white transition-colors duration-200 sm:absolute sm:top-0 sm:right-0"
+              className="inline-flex items-center justify-center gap-2 rounded-full shrink-0 bg-brand-500 text-white font-bold py-2.5 px-5 shadow-sm shadow-brand-900/30 hover:bg-brand-600 transition-colors duration-200"
             >
               <Plus className="w-4 h-4" />
-              Log a Send
+              <span className="hidden sm:inline">Log a Send</span>
             </Link>
           </div>
         </div>
 
-        <div className="relative -mt-10 sm:-mt-12 mx-4 sm:mx-6 mb-4 sm:mb-6 rounded-xl bg-white border border-slate-200 shadow-lg shadow-black/20 grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 sm:p-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 sm:p-5">
           {statTiles.map(({ label, value, caption, icon: Icon, tint, iconTint, chipBg, muted }) => (
             <div key={label} className={`flex flex-col justify-between rounded-xl border p-4 ${tint}`}>
               <div className="flex items-center gap-2 mb-2">
