@@ -274,77 +274,46 @@ export function Dashboard() {
       <div className="grid lg:grid-cols-[minmax(0,1fr)_340px] gap-6 items-stretch">
         <div className="space-y-6">
           <section className="card-light">
-            <h2 className="text-lg font-bold text-gray-900 mb-3">Recent activity</h2>
-            {sendsLoading ? (
-              <p className="text-gray-500 text-sm">Loading…</p>
-            ) : !sends || sends.length === 0 ? (
-              <p className="text-gray-500 text-sm">No climbs logged yet.</p>
+            <h2 className="text-lg font-bold text-gray-900 mb-3">Climbs per grade</h2>
+            {climbsPerGrade.length === 0 ? (
+              <p className="text-gray-500 text-sm">No sends logged yet.</p>
             ) : (
-              <div className="space-y-2">
-                {sends.slice(0, 5).map((send) => {
-                  const rowContent = (
-                    <>
-                      <div className="w-8 h-8 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
-                        <Zap className="w-4 h-4 text-brand-600" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 min-w-0">
-                          {send.route?.grade && (
-                            <span
-                              className={`badge shrink-0 rounded-md ${getGradeSolidBadgeProps(send.route.grade).className}`}
-                              style={getGradeSolidBadgeProps(send.route.grade).style}
-                            >
-                              {send.route.grade}
-                            </span>
-                          )}
-                          <p className="text-sm font-semibold text-gray-900 truncate">
-                            {send.route?.route_name ?? 'Unknown route'}
-                          </p>
-                        </div>
-                        {send.route?.styles && send.route.styles.length > 0 && (
-                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                            {send.route.styles.slice(0, 2).map((style) => (
-                              <span key={style} className="badge bg-gray-100 text-gray-600 shrink-0">
-                                {style}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <div className="ml-auto flex flex-col items-end gap-1 shrink-0 text-right">
-                        <span className="text-xs text-gray-400">{formatRelativeDate(send.date_completed)}</span>
-                        {send.route?.gym?.gym_name && (
-                          <span className="flex items-center gap-1 text-xs text-gray-500">
-                            <MapPin className="w-3 h-3 shrink-0" />
-                            {send.route.gym.gym_name}
-                          </span>
-                        )}
-                      </div>
-                    </>
-                  );
-                  const rowClasses =
-                    'flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2.5 hover:border-slate-300 hover:bg-slate-50/50 transition-all';
-                  const gymSlug = send.route?.gym?.slug;
-                  const routeId = send.route?.id;
-
-                  if (gymSlug && routeId) {
-                    return (
-                      <Link
-                        key={send.id}
-                        to={`/routes/${gymSlug}/climbs/${routeId}`}
-                        className={`${rowClasses} cursor-pointer`}
-                      >
-                        {rowContent}
-                      </Link>
-                    );
-                  }
-                  return (
-                    <div key={send.id} className={rowClasses}>
-                      {rowContent}
-                    </div>
-                  );
-                })}
-              </div>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={climbsPerGrade} margin={{ top: 8, right: 28, left: 0, bottom: 0 }}>
+                  <defs>
+                    {climbsPerGrade.map((row) => {
+                      const hex = getGradeColorHex(row.grade);
+                      return (
+                        <linearGradient key={row.grade} id={`gradeGrad-${row.grade}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={hex} stopOpacity={1} />
+                          <stop offset="100%" stopColor={hex} stopOpacity={0.55} />
+                        </linearGradient>
+                      );
+                    })}
+                  </defs>
+                  <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 3" />
+                  <XAxis dataKey="grade" stroke="#334155" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis allowDecimals={false} stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} width={20} />
+                  <Tooltip
+                    contentStyle={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8 }}
+                    labelStyle={{ color: '#111827' }}
+                    cursor={{ fill: '#f8fafc' }}
+                  />
+                  {climbsPerGrade.length > 1 && (
+                    <ReferenceLine
+                      y={avgPerGrade}
+                      stroke="#94a3b8"
+                      strokeDasharray="4 4"
+                      label={{ value: 'avg', position: 'right', fill: '#94a3b8', fontSize: 10 }}
+                    />
+                  )}
+                  <Bar dataKey="count" radius={[8, 8, 0, 0]}>
+                    {climbsPerGrade.map((row) => (
+                      <Cell key={row.grade} fill={`url(#gradeGrad-${row.grade})`} stroke={GRADE_SWATCH_BORDER} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             )}
           </section>
 
@@ -433,46 +402,77 @@ export function Dashboard() {
           </section>
 
           <section className="card-light">
-            <h2 className="text-lg font-bold text-gray-900 mb-3">Climbs per grade</h2>
-            {climbsPerGrade.length === 0 ? (
-              <p className="text-gray-500 text-sm">No sends logged yet.</p>
+            <h2 className="text-lg font-bold text-gray-900 mb-3">Recent activity</h2>
+            {sendsLoading ? (
+              <p className="text-gray-500 text-sm">Loading…</p>
+            ) : !sends || sends.length === 0 ? (
+              <p className="text-gray-500 text-sm">No climbs logged yet.</p>
             ) : (
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={climbsPerGrade} margin={{ top: 8, right: 28, left: 0, bottom: 0 }}>
-                  <defs>
-                    {climbsPerGrade.map((row) => {
-                      const hex = getGradeColorHex(row.grade);
-                      return (
-                        <linearGradient key={row.grade} id={`gradeGrad-${row.grade}`} x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={hex} stopOpacity={1} />
-                          <stop offset="100%" stopColor={hex} stopOpacity={0.55} />
-                        </linearGradient>
-                      );
-                    })}
-                  </defs>
-                  <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 3" />
-                  <XAxis dataKey="grade" stroke="#334155" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis allowDecimals={false} stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} width={20} />
-                  <Tooltip
-                    contentStyle={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8 }}
-                    labelStyle={{ color: '#111827' }}
-                    cursor={{ fill: '#f8fafc' }}
-                  />
-                  {climbsPerGrade.length > 1 && (
-                    <ReferenceLine
-                      y={avgPerGrade}
-                      stroke="#94a3b8"
-                      strokeDasharray="4 4"
-                      label={{ value: 'avg', position: 'right', fill: '#94a3b8', fontSize: 10 }}
-                    />
-                  )}
-                  <Bar dataKey="count" radius={[8, 8, 0, 0]}>
-                    {climbsPerGrade.map((row) => (
-                      <Cell key={row.grade} fill={`url(#gradeGrad-${row.grade})`} stroke={GRADE_SWATCH_BORDER} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="space-y-2">
+                {sends.slice(0, 5).map((send) => {
+                  const rowContent = (
+                    <>
+                      <div className="w-8 h-8 rounded-full bg-brand-50 flex items-center justify-center shrink-0">
+                        <Zap className="w-4 h-4 text-brand-600" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {send.route?.grade && (
+                            <span
+                              className={`badge shrink-0 rounded-md ${getGradeSolidBadgeProps(send.route.grade).className}`}
+                              style={getGradeSolidBadgeProps(send.route.grade).style}
+                            >
+                              {send.route.grade}
+                            </span>
+                          )}
+                          <p className="text-sm font-semibold text-gray-900 truncate">
+                            {send.route?.route_name ?? 'Unknown route'}
+                          </p>
+                        </div>
+                        {send.route?.styles && send.route.styles.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                            {send.route.styles.slice(0, 2).map((style) => (
+                              <span key={style} className="badge bg-gray-100 text-gray-600 shrink-0">
+                                {style}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="ml-auto flex flex-col items-end gap-1 shrink-0 text-right">
+                        <span className="text-xs text-gray-400">{formatRelativeDate(send.date_completed)}</span>
+                        {send.route?.gym?.gym_name && (
+                          <span className="flex items-center gap-1 text-xs text-gray-500">
+                            <MapPin className="w-3 h-3 shrink-0" />
+                            {send.route.gym.gym_name}
+                          </span>
+                        )}
+                      </div>
+                    </>
+                  );
+                  const rowClasses =
+                    'flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2.5 hover:border-slate-300 hover:bg-slate-50/50 transition-all';
+                  const gymSlug = send.route?.gym?.slug;
+                  const routeId = send.route?.id;
+
+                  if (gymSlug && routeId) {
+                    return (
+                      <Link
+                        key={send.id}
+                        to={`/routes/${gymSlug}/climbs/${routeId}`}
+                        className={`${rowClasses} cursor-pointer`}
+                      >
+                        {rowContent}
+                      </Link>
+                    );
+                  }
+                  return (
+                    <div key={send.id} className={rowClasses}>
+                      {rowContent}
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </section>
 
