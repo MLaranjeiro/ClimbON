@@ -99,13 +99,12 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40" onClick={onClose}>
-      <div className="flex min-h-full items-center justify-center px-4 py-10">
-        <div
-          className={`w-full rounded-xl bg-white shadow-xl transition-[max-width] ${view === 'log' ? 'max-w-md' : 'max-w-2xl'}`}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex items-center border-b border-gray-100 px-4 py-3">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 sm:py-10" onClick={onClose}>
+      <div
+        className={`w-full max-h-full flex flex-col overflow-hidden rounded-xl bg-white shadow-xl transition-[max-width] ${view === 'log' ? 'max-w-md' : 'max-w-2xl'}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="shrink-0 flex items-center border-b border-gray-100 px-4 py-3">
             {view === 'log' ? (
               <>
                 <button
@@ -173,7 +172,7 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
           </div>
 
           {view === 'detail' && hasSiblings && (
-            <div className="flex items-center gap-3 px-4 py-2 border-b border-gray-100 text-xs">
+            <div className="shrink-0 flex items-center gap-3 px-4 py-2 border-b border-gray-100 text-xs">
               <span className="text-gray-400 font-medium shrink-0">Sort:</span>
               {(
                 [
@@ -205,7 +204,7 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
             </div>
           )}
 
-          <div className="p-5 max-h-[75vh] overflow-y-auto">
+          <div className="p-5 flex-1 min-h-0 overflow-y-auto">
             {isLoading || !route ? (
               <p className="text-gray-500 text-sm">Loading…</p>
             ) : view === 'log' ? (
@@ -373,8 +372,7 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
             )}
           </div>
         </div>
-      </div>
-    </div>,
+      </div>,
     document.body,
   );
 }
