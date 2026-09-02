@@ -19,7 +19,7 @@ import { useSiblingRouteStats } from '../hooks/useSiblingRouteStats';
 import { compareGrades, GRADE_SWATCH_BORDER, getGradeBadgeClasses, getGradeColorHex } from '../lib/grades';
 import type { RouteGrade } from '../types';
 import { BetaList } from './BetaList';
-import { LogClimbModal } from './LogClimbModal';
+import { LogClimbForm } from './LogClimbForm';
 
 interface SiblingRoute {
   id: number;
@@ -27,6 +27,7 @@ interface SiblingRoute {
 }
 
 type SortColumn = 'grade' | 'difficulty' | 'sends';
+type View = 'detail' | 'log';
 
 interface RouteDetailModalProps {
   routeId: number;
@@ -37,8 +38,8 @@ interface RouteDetailModalProps {
 
 export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }: RouteDetailModalProps) {
   const { route, isLoading, beta, stats } = useRouteDetail(routeId);
-  const { isLogged, loggedGrade } = useMyRouteLog(routeId);
-  const [showLogClimb, setShowLogClimb] = useState(false);
+  const { isLogged } = useMyRouteLog(routeId);
+  const [view, setView] = useState<View>('detail');
   const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
@@ -47,13 +48,16 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      // Let the Log Climb modal handle its own Escape while it's open on top of this one.
-      if (showLogClimb) return;
-      if (e.key === 'Escape') onClose();
+      if (e.key !== 'Escape') return;
+      if (view === 'log') {
+        setView('detail');
+      } else {
+        onClose();
+      }
     }
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, showLogClimb]);
+  }, [onClose, view]);
 
   const sortedSiblings = useMemo(() => {
     if (!sortColumn) return siblingRoutes;
@@ -95,57 +99,69 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
   }
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-black/40"
-      onClick={() => {
-        if (!showLogClimb) onClose();
-      }}
-    >
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40" onClick={onClose}>
       <div className="flex min-h-full items-center justify-center px-4 py-10">
         <div className="w-full max-w-2xl rounded-xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center border-b border-gray-100 px-4 py-3">
-            <div className="w-7 shrink-0" />
-            <div className="flex-1 flex items-center justify-center gap-2 min-w-0">
-              {hasSiblings && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => goTo(currentIndex - 1)}
-                    disabled={currentIndex === 0}
-                    className="p-1 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 disabled:hover:bg-transparent shrink-0"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <div className="flex items-center gap-1.5 overflow-x-auto px-1 py-1 min-w-0">
-                    {sortedSiblings.map((sibling, i) => (
+            {view === 'log' ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setView('detail')}
+                  className="shrink-0 p-1.5 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <h2 className="flex-1 text-center text-lg font-bold text-gray-900 truncate px-2">
+                  {isLogged ? 'Update Log' : 'Log Climb'}
+                </h2>
+              </>
+            ) : (
+              <>
+                <div className="w-7 shrink-0" />
+                <div className="flex-1 flex items-center justify-center gap-2 min-w-0">
+                  {hasSiblings && (
+                    <>
                       <button
-                        key={sibling.id}
                         type="button"
-                        onClick={() => goTo(i)}
-                        className={`badge shrink-0 border cursor-pointer ${getGradeBadgeClasses(sibling.grade)} ${
-                          i === currentIndex ? 'ring-2 ring-offset-1 ring-gray-900' : ''
-                        }`}
-                        style={{ borderColor: GRADE_SWATCH_BORDER }}
-                        title={sibling.grade}
+                        onClick={() => goTo(currentIndex - 1)}
+                        disabled={currentIndex === 0}
+                        className="p-1 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 disabled:hover:bg-transparent shrink-0"
                       >
-                        {sibling.grade}
+                        <ChevronLeft className="w-4 h-4" />
                       </button>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => goTo(currentIndex + 1)}
-                    disabled={currentIndex === sortedSiblings.length - 1}
-                    className="p-1 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 disabled:hover:bg-transparent shrink-0"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                  <span className="text-xs text-gray-400 shrink-0">
-                    {currentIndex + 1} / {sortedSiblings.length}
-                  </span>
-                </>
-              )}
-            </div>
+                      <div className="flex items-center gap-1.5 overflow-x-auto px-1 py-1 min-w-0">
+                        {sortedSiblings.map((sibling, i) => (
+                          <button
+                            key={sibling.id}
+                            type="button"
+                            onClick={() => goTo(i)}
+                            className={`badge shrink-0 border cursor-pointer ${getGradeBadgeClasses(sibling.grade)} ${
+                              i === currentIndex ? 'ring-2 ring-offset-1 ring-gray-900' : ''
+                            }`}
+                            style={{ borderColor: GRADE_SWATCH_BORDER }}
+                            title={sibling.grade}
+                          >
+                            {sibling.grade}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => goTo(currentIndex + 1)}
+                        disabled={currentIndex === sortedSiblings.length - 1}
+                        className="p-1 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 disabled:hover:bg-transparent shrink-0"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                      <span className="text-xs text-gray-400 shrink-0">
+                        {currentIndex + 1} / {sortedSiblings.length}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
             <button
               type="button"
               onClick={onClose}
@@ -155,7 +171,7 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
             </button>
           </div>
 
-          {hasSiblings && (
+          {view === 'detail' && hasSiblings && (
             <div className="flex items-center gap-3 px-4 py-2 border-b border-gray-100 text-xs">
               <span className="text-gray-400 font-medium shrink-0">Sort:</span>
               {(
@@ -191,6 +207,14 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
           <div className="p-5">
             {isLoading || !route ? (
               <p className="text-gray-500 text-sm">Loading…</p>
+            ) : view === 'log' ? (
+              <LogClimbForm
+                routeId={route.id}
+                routeName={route.route_name}
+                grade={route.grade}
+                sectionName={route.section?.section_name}
+                onDone={() => setView('detail')}
+              />
             ) : (
               <div className="space-y-6">
                 <div className="flex items-center justify-between gap-3">
@@ -203,16 +227,13 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
                   </div>
                   <button
                     type="button"
-                    onClick={() => setShowLogClimb(true)}
+                    onClick={() => setView('log')}
                     className={`text-sm flex items-center gap-2 shrink-0 ${isLogged ? 'btn-secondary-light' : 'btn-primary'}`}
                   >
                     {isLogged ? (
                       <>
                         <CheckCircle className="w-4 h-4" />
                         Logged
-                        {loggedGrade && (
-                          <span className={`badge ${getGradeBadgeClasses(loggedGrade)}`}>{loggedGrade}</span>
-                        )}
                         <Pencil className="w-3.5 h-3.5" />
                       </>
                     ) : (
@@ -318,16 +339,6 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
           </div>
         </div>
       </div>
-
-      {showLogClimb && route && (
-        <LogClimbModal
-          routeId={route.id}
-          routeName={route.route_name}
-          grade={route.grade}
-          sectionName={route.section?.section_name}
-          onClose={() => setShowLogClimb(false)}
-        />
-      )}
     </div>,
     document.body,
   );
