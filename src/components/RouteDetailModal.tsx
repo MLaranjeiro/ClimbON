@@ -122,12 +122,14 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
                         key={sibling.id}
                         type="button"
                         onClick={() => goTo(i)}
-                        className={`w-5 h-5 rounded-full shrink-0 border ${
+                        className={`badge shrink-0 border cursor-pointer ${getGradeBadgeClasses(sibling.grade)} ${
                           i === currentIndex ? 'ring-2 ring-offset-1 ring-gray-900' : ''
                         }`}
-                        style={{ backgroundColor: getGradeColorHex(sibling.grade), borderColor: GRADE_SWATCH_BORDER }}
+                        style={{ borderColor: GRADE_SWATCH_BORDER }}
                         title={sibling.grade}
-                      />
+                      >
+                        {sibling.grade}
+                      </button>
                     ))}
                   </div>
                   <button
