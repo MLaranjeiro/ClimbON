@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { Circle, Loader2, Video, X, Zap } from 'lucide-react';
+import { Circle, Loader2, Repeat, Video, X, Zap } from 'lucide-react';
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useAuth } from '../context/auth';
 import { useMyRouteLog } from '../hooks/useMyRouteLog';
@@ -17,20 +17,29 @@ interface LogClimbFormProps {
   onDone: () => void;
 }
 
-type OutcomePill = 'flash' | 'send' | 'attempt';
-
-const ATTEMPT_STEPS = [1, 2, 3, 4] as const;
+// The first slot is Flash on a route you haven't sent yet, or Repeat once you have —
+// a flash only makes sense on a first-ever send. The other two slots keep their
+// meaning either way. Each is a single tap: outcome and attempts are implied together,
+// there's no separate step to fill in a count.
+type OutcomeSlot = 'primary' | 'send' | 'attempt';
 
 function today() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function pillClasses(active: boolean) {
+  return `flex-1 flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
+    active
+      ? 'bg-brand-600 border-brand-600 text-white'
+      : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
+  }`;
 }
 
 export function LogClimbForm({ routeId, routeName, grade, sectionName, onDone }: LogClimbFormProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const [outcome, setOutcome] = useState<OutcomePill | null>(null);
-  const [attempts, setAttempts] = useState(1);
+  const [outcomeSlot, setOutcomeSlot] = useState<OutcomeSlot | null>(null);
   const [dateOverride, setDateOverride] = useState<string | null>(null);
   const [gradeOverride, setGradeOverride] = useState<RouteGrade | null>(null);
   const [notes, setNotes] = useState('');
@@ -45,11 +54,6 @@ export function LogClimbForm({ routeId, routeName, grade, sectionName, onDone }:
 
   const date = dateOverride ?? today();
   const suggestedGrade = gradeOverride ?? loggedGrade ?? grade;
-
-  function selectOutcome(next: OutcomePill) {
-    setOutcome(next);
-    if (next === 'flash') setAttempts(1);
-  }
 
   async function handleVideoChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -83,11 +87,15 @@ export function LogClimbForm({ routeId, routeName, grade, sectionName, onDone }:
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!user || !outcome) return;
+    if (!user || !outcomeSlot) return;
     setSubmitting(true);
     setError(null);
 
-    const sendType: SendType = outcome === 'flash' ? 'flash' : outcome === 'attempt' ? 'attempt' : isLogged ? 'repeat' : 'send';
+    let sendType: SendType;
+    if (outcomeSlot === 'attempt') sendType = 'attempt';
+    else if (outcomeSlot === 'primary') sendType = isLogged ? 'repeat' : 'flash';
+    else sendType = isLogged ? 'repeat' : 'send';
+    const attempts = outcomeSlot === 'send' ? 2 : 1;
 
     const { error: sendError } = await supabase.from('sends').insert({
       user_id: user.id,
@@ -156,70 +164,28 @@ export function LogClimbForm({ routeId, routeName, grade, sectionName, onDone }:
         <div className="flex gap-2">
           <button
             type="button"
-            disabled={isLogged}
-            onClick={() => selectOutcome('flash')}
-            title={isLogged ? "Already sent — flash only counts on a first-ever send." : undefined}
-            className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
-              outcome === 'flash'
-                ? 'bg-brand-600 border-brand-600 text-white'
-                : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
-            } disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-300`}
+            onClick={() => setOutcomeSlot('primary')}
+            className={pillClasses(outcomeSlot === 'primary')}
           >
-            <Zap className="w-3.5 h-3.5" />
-            Flash
+            {isLogged ? <Repeat className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5" />}
+            {isLogged ? 'Repeat' : 'Flash'}
           </button>
           <button
             type="button"
-            onClick={() => selectOutcome('send')}
-            className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
-              outcome === 'send'
-                ? 'bg-brand-600 border-brand-600 text-white'
-                : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
-            }`}
+            onClick={() => setOutcomeSlot('send')}
+            className={pillClasses(outcomeSlot === 'send')}
           >
             Send
           </button>
           <button
             type="button"
-            onClick={() => selectOutcome('attempt')}
-            className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
-              outcome === 'attempt'
-                ? 'bg-brand-600 border-brand-600 text-white'
-                : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
-            }`}
+            onClick={() => setOutcomeSlot('attempt')}
+            className={pillClasses(outcomeSlot === 'attempt')}
           >
             <Circle className="w-3.5 h-3.5" />
             Attempt
           </button>
         </div>
-
-        {outcome && outcome !== 'flash' && (
-          <div className="mt-3">
-            <label className="block text-xs text-gray-500 mb-1.5">
-              {outcome === 'attempt' ? 'How many tries this session?' : 'How many attempts to send?'}
-            </label>
-            <div className="flex gap-1.5">
-              {ATTEMPT_STEPS.map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => setAttempts(n)}
-                  className={`w-10 h-8 rounded-lg text-sm font-semibold border transition-colors ${
-                    attempts === n
-                      ? 'bg-brand-600 border-brand-600 text-white'
-                      : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
-                  }`}
-                >
-                  {n === 4 ? '4+' : n}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {outcome === 'send' && isLogged && (
-          <p className="mt-2 text-xs text-gray-500">Logged as a repeat send.</p>
-        )}
       </div>
 
       <div>
@@ -320,7 +286,7 @@ export function LogClimbForm({ routeId, routeName, grade, sectionName, onDone }:
 
       {error && <ErrorAlert message={error} light />}
 
-      <button type="submit" className="btn-primary w-full" disabled={!outcome || submitting || videoUploading}>
+      <button type="submit" className="btn-primary w-full" disabled={!outcomeSlot || submitting || videoUploading}>
         {submitting ? 'Logging…' : `Log Climb for ${routeName}`}
       </button>
     </form>
