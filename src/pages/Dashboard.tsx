@@ -18,11 +18,13 @@ import { Avatar } from '../components/Avatar';
 import { useAuth } from '../context/auth';
 import { GRADE_ORDER, GRADE_SWATCH_BORDER, getGradeColorHex, getHighestGrade } from '../lib/grades';
 import { supabase } from '../lib/supabase';
-import type { RouteGrade } from '../types';
+import type { RouteGrade, SendType } from '../types';
 
 interface SendRow {
   id: number;
   date_completed: string;
+  send_type: SendType;
+  attempts: number;
   route: {
     id: number;
     route_name: string;
@@ -31,6 +33,13 @@ interface SendRow {
     gym: { gym_name: string; slug: string } | null;
   } | null;
 }
+
+const SEND_TYPE_LABELS: Record<SendType, string> = {
+  flash: 'Flash',
+  send: 'Send',
+  repeat: 'Repeat',
+  attempt: 'Attempt',
+};
 
 interface BetaRow {
   id: number;
@@ -128,7 +137,9 @@ export function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('sends')
-        .select('id, date_completed, route:routes(id, route_name, grade, styles, gym:gyms(gym_name, slug))')
+        .select(
+          'id, date_completed, send_type, attempts, route:routes(id, route_name, grade, styles, gym:gyms(gym_name, slug))',
+        )
         .eq('user_id', user!.id)
         .order('date_completed', { ascending: false });
       if (error) throw error;
@@ -150,25 +161,29 @@ export function Dashboard() {
     },
   });
 
-  const totalClimbs = sends?.length ?? 0;
-  const grades = (sends ?? []).map((s) => s.route?.grade).filter((g): g is RouteGrade => !!g);
+  // Attempts are logged for session history (Recent activity) but shouldn't inflate
+  // completion stats or grade milestones — those only count actual sends.
+  const completedSends = (sends ?? []).filter((s) => s.send_type !== 'attempt');
+
+  const totalClimbs = completedSends.length;
+  const grades = completedSends.map((s) => s.route?.grade).filter((g): g is RouteGrade => !!g);
   const highestGrade = getHighestGrade(grades);
-  const climbsThisWeek = (sends ?? []).filter((s) => isThisWeek(s.date_completed)).length;
-  const gradesThisWeek = (sends ?? [])
+  const climbsThisWeek = completedSends.filter((s) => isThisWeek(s.date_completed)).length;
+  const gradesThisWeek = completedSends
     .filter((s) => isThisWeek(s.date_completed))
     .map((s) => s.route?.grade)
     .filter((g): g is RouteGrade => !!g);
   const highestGradeThisWeek = getHighestGrade(gradesThisWeek);
-  const climbsThisMonth = (sends ?? []).filter((s) => isThisMonth(s.date_completed)).length;
-  const gradesThisMonth = (sends ?? [])
+  const climbsThisMonth = completedSends.filter((s) => isThisMonth(s.date_completed)).length;
+  const gradesThisMonth = completedSends
     .filter((s) => isThisMonth(s.date_completed))
     .map((s) => s.route?.grade)
     .filter((g): g is RouteGrade => !!g);
   const highestGradeThisMonth = getHighestGrade(gradesThisMonth);
-  const weeklyStreak = computeWeeklyStreak((sends ?? []).map((s) => s.date_completed));
+  const weeklyStreak = computeWeeklyStreak(completedSends.map((s) => s.date_completed));
 
   const gymSendCounts = new Map<string, number>();
-  for (const s of sends ?? []) {
+  for (const s of completedSends) {
     const name = s.route?.gym?.gym_name;
     if (name) gymSendCounts.set(name, (gymSendCounts.get(name) ?? 0) + 1);
   }
@@ -182,7 +197,7 @@ export function Dashboard() {
   }
   const activeGym = homeGym?.gym_name ?? mostFrequentGym;
 
-  const periodSends = (sends ?? []).filter((s) => {
+  const periodSends = completedSends.filter((s) => {
     if (gradePeriod === 'week') return isThisWeek(s.date_completed);
     if (gradePeriod === 'month') return isThisMonth(s.date_completed);
     if (gradePeriod === '3months') return isWithinLastMonths(s.date_completed, 3);
@@ -481,12 +496,17 @@ export function Dashboard() {
             ) : (
               <div className="space-y-2">
                 {sends.slice(0, 5).map((send) => {
+                  const isAttempt = send.send_type === 'attempt';
                   const rowContent = (
                     <>
                       {send.route?.grade ? (
                         <span
-                          className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${getGradeSolidBadgeProps(send.route.grade).className}`}
-                          style={getGradeSolidBadgeProps(send.route.grade).style}
+                          className={
+                            isAttempt
+                              ? 'w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-white text-gray-500 border-2 border-dashed border-gray-300'
+                              : `w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${getGradeSolidBadgeProps(send.route.grade).className}`
+                          }
+                          style={isAttempt ? undefined : getGradeSolidBadgeProps(send.route.grade).style}
                         >
                           {send.route.grade}
                         </span>
@@ -499,15 +519,19 @@ export function Dashboard() {
                         <p className="text-sm font-semibold text-gray-900 truncate">
                           {send.route?.route_name ?? 'Unknown route'}
                         </p>
-                        {send.route?.styles && send.route.styles.length > 0 && (
-                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                            {send.route.styles.slice(0, 2).map((style) => (
-                              <span key={style} className="badge bg-gray-100 text-gray-600 shrink-0">
-                                {style}
-                              </span>
-                            ))}
-                          </div>
-                        )}
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                          <span
+                            className={`badge shrink-0 ${isAttempt ? 'bg-gray-100 text-gray-500' : 'bg-emerald-50 text-emerald-700'}`}
+                          >
+                            {SEND_TYPE_LABELS[send.send_type]}
+                            {send.attempts > 1 ? ` · ${send.attempts}${send.attempts >= 4 ? '+' : ''}x` : ''}
+                          </span>
+                          {send.route?.styles?.slice(0, 2).map((style) => (
+                            <span key={style} className="badge bg-gray-100 text-gray-600 shrink-0">
+                              {style}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                       <div className="ml-auto flex flex-col items-end gap-1 shrink-0 text-right">
                         <span className="text-xs text-gray-400">{formatRelativeDate(send.date_completed)}</span>
