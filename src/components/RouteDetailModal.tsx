@@ -206,7 +206,7 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
             </div>
           )}
 
-          <div className="p-5">
+          <div className="p-5 max-h-[75vh] overflow-y-auto">
             {isLoading || !route ? (
               <p className="text-gray-500 text-sm">Loading…</p>
             ) : view === 'log' ? (
@@ -247,7 +247,7 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
                   </button>
                 </div>
 
-                <div className="relative w-full h-64 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
+                <div className="relative w-full aspect-[16/9] rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
                   {route.image_url ? (
                     <img src={route.image_url} alt="" className="w-full h-full object-cover" />
                   ) : (
@@ -280,7 +280,7 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
                   <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
                     Community grading
                   </h3>
-                  <div className="rounded-lg border border-gray-200 p-4 min-h-[132px] space-y-4">
+                  <div className="rounded-lg border border-gray-200 p-4 min-h-[140px] flex flex-col justify-between">
                     <div>
                       <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                         <CheckCircle className="w-3.5 h-3.5" />
@@ -295,29 +295,43 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
                         </span>
                       </div>
 
-                      {stats && stats.ratingDistribution.length > 0 && (
-                        <div className="space-y-2 mt-3">
-                          {stats.ratingDistribution.map((row) => {
-                            const maxCount = Math.max(...stats.ratingDistribution.map((r) => r.count));
-                            return (
-                              <div key={row.grade} className="flex items-center gap-3">
-                                <span className="w-8 text-xs font-semibold text-gray-900 shrink-0">{row.grade}</span>
-                                <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
-                                  <div
-                                    className="h-full rounded-full border"
-                                    style={{
-                                      width: `${(row.count / maxCount) * 100}%`,
-                                      backgroundColor: getGradeColorHex(row.grade),
-                                      borderColor: GRADE_SWATCH_BORDER,
-                                    }}
-                                  />
+                      {/* Fixed height regardless of how many distinct grades are rated, so the
+                          card never jitters when switching climbs. Empty state mirrors a real
+                          row's shape rather than leaving blank space, so it reads as "no data"
+                          instead of a layout gap. */}
+                      <div className="mt-3 h-20 flex flex-col justify-center">
+                        {stats && stats.ratingDistribution.length > 0 ? (
+                          <div className="space-y-2 max-h-20 overflow-y-auto pr-1">
+                            {stats.ratingDistribution.map((row) => {
+                              const maxCount = Math.max(...stats.ratingDistribution.map((r) => r.count));
+                              return (
+                                <div key={row.grade} className="flex items-center gap-3">
+                                  <span className="w-8 text-xs font-semibold text-gray-900 shrink-0">
+                                    {row.grade}
+                                  </span>
+                                  <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
+                                    <div
+                                      className="h-full rounded-full border"
+                                      style={{
+                                        width: `${(row.count / maxCount) * 100}%`,
+                                        backgroundColor: getGradeColorHex(row.grade),
+                                        borderColor: GRADE_SWATCH_BORDER,
+                                      }}
+                                    />
+                                  </div>
+                                  <span className="w-4 text-xs text-gray-500 text-right shrink-0">{row.count}</span>
                                 </div>
-                                <span className="w-4 text-xs text-gray-500 text-right shrink-0">{row.count}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-3 opacity-60">
+                            <span className="w-8 text-xs font-semibold text-gray-400 shrink-0">—</span>
+                            <div className="flex-1 h-2 rounded-full bg-gray-100" />
+                            <span className="w-4 text-xs text-gray-400 text-right shrink-0">0</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div className="pt-4 border-t border-gray-100">
