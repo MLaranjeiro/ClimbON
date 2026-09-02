@@ -12,7 +12,7 @@ interface LogClimbModalProps {
 
 export function LogClimbModal({ routeId, routeName, grade, sectionName, onClose }: LogClimbModalProps) {
   return (
-    <ModalShell title="Log Climb" onClose={onClose}>
+    <ModalShell title="Log Climb" onClose={onClose} maxWidthClass="max-w-md">
       <LogClimbForm
         routeId={routeId}
         routeName={routeName}

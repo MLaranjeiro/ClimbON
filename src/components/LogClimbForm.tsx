@@ -154,8 +154,8 @@ export function LogClimbForm({ routeId, routeName, grade, sectionName, onDone }:
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="rounded-lg border border-gray-200 p-3 flex items-center gap-3">
-        <span className={`badge ${getGradeBadgeClasses(grade)}`}>{grade}</span>
+      <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 flex items-center gap-3">
+        <span className={`badge text-sm font-bold px-3 py-1 ${getGradeBadgeClasses(grade)}`}>{grade}</span>
         <div className="min-w-0">
           <p className="font-semibold text-gray-900 truncate">{routeName}</p>
           {sectionName && <p className="text-xs text-gray-500">{sectionName}</p>}
@@ -197,19 +197,44 @@ export function LogClimbForm({ routeId, routeName, grade, sectionName, onDone }:
         </div>
       </div>
 
-      <div>
-        <label htmlFor="logDate" className="block text-sm text-gray-600 mb-1">
-          Date
-        </label>
-        <input
-          id="logDate"
-          type="date"
-          className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-          value={date}
-          max={today()}
-          onChange={(e) => setDateOverride(e.target.value)}
-          required
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="logDate" className="block text-sm text-gray-600 mb-1">
+            Date
+          </label>
+          <input
+            id="logDate"
+            type="date"
+            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+            value={date}
+            max={today()}
+            onChange={(e) => setDateOverride(e.target.value)}
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm text-gray-600 mb-1">Rate this climb</label>
+          <div className="flex items-center gap-1 h-[34px]">
+            {[1, 2, 3, 4, 5].map((n) => {
+              const filled = suggestedQuality != null && n <= suggestedQuality;
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setQualityOverride(n === suggestedQuality ? 0 : n)}
+                  aria-label={`${n} star${n > 1 ? 's' : ''}`}
+                  className="p-0.5 text-gray-300 hover:text-amber-400 transition-colors"
+                >
+                  <Star
+                    className={`w-5 h-5 ${filled ? 'text-amber-400' : ''}`}
+                    fill={filled ? 'currentColor' : 'none'}
+                  />
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       <div>
@@ -222,7 +247,9 @@ export function LogClimbForm({ routeId, routeName, grade, sectionName, onDone }:
                 key={g}
                 type="button"
                 onClick={() => setGradeOverride(g)}
-                className={`badge cursor-pointer ${active ? getGradeBadgeClasses(g) : 'bg-gray-100 text-gray-600'}`}
+                className={`h-9 min-w-9 px-2 rounded-lg text-sm font-semibold transition-colors ${
+                  active ? getGradeBadgeClasses(g) : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
               >
                 {g}
               </button>
@@ -231,86 +258,64 @@ export function LogClimbForm({ routeId, routeName, grade, sectionName, onDone }:
         </div>
       </div>
 
-      <div>
-        <label className="block text-sm text-gray-600 mb-2">Rate this climb</label>
-        <div className="flex items-center gap-1">
-          {[1, 2, 3, 4, 5].map((n) => {
-            const filled = suggestedQuality != null && n <= suggestedQuality;
-            return (
-              <button
-                key={n}
-                type="button"
-                onClick={() => setQualityOverride(n === suggestedQuality ? 0 : n)}
-                aria-label={`${n} star${n > 1 ? 's' : ''}`}
-                className="p-0.5 text-gray-300 hover:text-amber-400 transition-colors"
-              >
-                <Star className={`w-5 h-5 ${filled ? 'text-amber-400' : ''}`} fill={filled ? 'currentColor' : 'none'} />
-              </button>
-            );
-          })}
+      <div className="border-t border-slate-100 pt-5 space-y-5">
+        <div>
+          <label htmlFor="logNotes" className="block text-sm text-gray-600 mb-1">
+            Notes (optional)
+          </label>
+          <textarea
+            id="logNotes"
+            className="input-field-light min-h-20"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Beta, cruxes, tips for next time…"
+          />
         </div>
-      </div>
 
-      <div>
-        <label htmlFor="logNotes" className="block text-sm text-gray-600 mb-1">
-          Notes (optional)
-        </label>
-        <textarea
-          id="logNotes"
-          className="input-field-light min-h-20"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Beta, cruxes, tips for next time…"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm text-gray-600 mb-1">Video (optional)</label>
-        {videoUrl ? (
-          <div className="relative">
-            <video src={videoUrl} controls className="w-full h-40 rounded-lg border border-gray-200 bg-black" />
-            <div className="absolute top-2 right-2 flex gap-2">
-              <button
-                type="button"
-                onClick={() => videoInputRef.current?.click()}
-                className="bg-white/90 hover:bg-white text-gray-700 text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-sm"
-              >
-                Change
-              </button>
-              <button
-                type="button"
-                onClick={removeVideo}
-                className="bg-white/90 hover:bg-white text-red-600 text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-sm"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-            <p className="text-xs text-gray-500 mt-1 truncate">{videoFileName}</p>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => videoInputRef.current?.click()}
-            disabled={videoUploading}
-            className="w-full h-24 flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-600 disabled:opacity-50"
-          >
-            {videoUploading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <>
-                <Video className="w-5 h-5" />
-                <span className="text-sm">Upload a video from your device</span>
-              </>
-            )}
-          </button>
-        )}
-        <input
-          ref={videoInputRef}
-          type="file"
-          accept="video/*"
-          className="hidden"
-          onChange={handleVideoChange}
-        />
+        <div>
+          {videoUrl ? (
+            <>
+              <label className="block text-sm text-gray-600 mb-1">Video</label>
+              <div className="relative">
+                <video src={videoUrl} controls className="w-full h-40 rounded-lg border border-gray-200 bg-black" />
+                <div className="absolute top-2 right-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => videoInputRef.current?.click()}
+                    className="bg-white/90 hover:bg-white text-gray-700 text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-sm"
+                  >
+                    Change
+                  </button>
+                  <button
+                    type="button"
+                    onClick={removeVideo}
+                    className="bg-white/90 hover:bg-white text-red-600 text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-sm"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1 truncate">{videoFileName}</p>
+              </div>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => videoInputRef.current?.click()}
+              disabled={videoUploading}
+              className="w-full flex items-center justify-center gap-2 rounded-lg border border-gray-300 text-gray-600 text-sm font-medium py-2 hover:border-gray-400 hover:text-gray-700 disabled:opacity-50"
+            >
+              {videoUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Video className="w-4 h-4" />}
+              {videoUploading ? 'Uploading…' : 'Add Beta Video (Optional)'}
+            </button>
+          )}
+          <input
+            ref={videoInputRef}
+            type="file"
+            accept="video/*"
+            className="hidden"
+            onChange={handleVideoChange}
+          />
+        </div>
       </div>
 
       {error && <ErrorAlert message={error} light />}

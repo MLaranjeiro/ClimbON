@@ -101,7 +101,10 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
   return createPortal(
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40" onClick={onClose}>
       <div className="flex min-h-full items-center justify-center px-4 py-10">
-        <div className="w-full max-w-2xl rounded-xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div
+          className={`w-full rounded-xl bg-white shadow-xl transition-[max-width] ${view === 'log' ? 'max-w-md' : 'max-w-2xl'}`}
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="flex items-center border-b border-gray-100 px-4 py-3">
             {view === 'log' ? (
               <>
