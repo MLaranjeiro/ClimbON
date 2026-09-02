@@ -1,5 +1,7 @@
+import { Check } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { compareGrades, getGradeColorHex, getGradePinBorderHex } from '../lib/grades';
+import { useMySentRouteIds } from '../hooks/useMySentRouteIds';
+import { compareGrades, getGradeColorHex, getGradePinBorderHex, getGradePinIconHex } from '../lib/grades';
 import type { Gym } from '../types';
 import { GymMapViewer } from './GymMapViewer';
 import { RouteDetailModal } from './RouteDetailModal';
@@ -16,6 +18,7 @@ export function GymMapContent({ gym, sections, routes }: GymMapContentProps) {
   const [selectedRouteId, setSelectedRouteId] = useState<number | null>(null);
 
   const placedRoutes = routes.filter((r) => r.map_x != null && r.map_y != null);
+  const sentRouteIds = useMySentRouteIds(placedRoutes.map((r) => r.id));
   const selectedRoute = routes.find((r) => r.id === selectedRouteId) ?? null;
 
   const siblingRoutes = useMemo(() => {
@@ -42,21 +45,26 @@ export function GymMapContent({ gym, sections, routes }: GymMapContentProps) {
     <div className="space-y-6">
       {gym.map_image_url ? (
         <GymMapViewer imageUrl={gym.map_image_url}>
-          {placedRoutes.map((r) => (
-            <button
-              key={r.id}
-              type="button"
-              onClick={() => setSelectedRouteId(r.id)}
-              className="absolute -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 shadow"
-              style={{
-                left: `${r.map_x}%`,
-                top: `${r.map_y}%`,
-                backgroundColor: getGradeColorHex(r.grade),
-                borderColor: getGradePinBorderHex(r.grade),
-              }}
-              title={`${r.route_name} (${r.grade})`}
-            />
-          ))}
+          {placedRoutes.map((r) => {
+            const sent = sentRouteIds.has(r.id);
+            return (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => setSelectedRouteId(r.id)}
+                className="absolute -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 shadow flex items-center justify-center"
+                style={{
+                  left: `${r.map_x}%`,
+                  top: `${r.map_y}%`,
+                  backgroundColor: getGradeColorHex(r.grade),
+                  borderColor: getGradePinBorderHex(r.grade),
+                }}
+                title={`${r.route_name} (${r.grade})${sent ? ' — sent' : ''}`}
+              >
+                {sent && <Check className="w-2.5 h-2.5" style={{ color: getGradePinIconHex(r.grade) }} strokeWidth={3} />}
+              </button>
+            );
+          })}
         </GymMapViewer>
       ) : (
         <div>

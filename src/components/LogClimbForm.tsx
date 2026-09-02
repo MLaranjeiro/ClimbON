@@ -116,6 +116,7 @@ export function LogClimbForm({ routeId, routeName, grade, sectionName, onDone }:
       queryClient.invalidateQueries({ queryKey: ['sends', user.id] }),
       queryClient.invalidateQueries({ queryKey: ['beta', user.id] }),
       queryClient.invalidateQueries({ queryKey: ['my-send', routeId, user.id] }),
+      queryClient.invalidateQueries({ queryKey: ['my-sent-route-ids'] }),
     ]);
 
     setSubmitting(false);

@@ -37,6 +37,12 @@ export function getGradePinBorderHex(grade: RouteGrade): string {
   return grade === 'V0' ? GRADE_SWATCH_BORDER : '#ffffff';
 }
 
+// Sent-route checkmark drawn inside a pin needs a dark mark on the light pin fills
+// (white V0, yellow V1) and a light mark everywhere else to stay legible.
+export function getGradePinIconHex(grade: RouteGrade): string {
+  return grade === 'V0' || grade === 'V1' ? '#171717' : '#ffffff';
+}
+
 export function getGradeBadgeClasses(grade: RouteGrade): string {
   return GRADE_BUCKETS.find((b) => b.grades.includes(grade))?.badge ?? 'bg-gray-100 text-gray-700';
 }
