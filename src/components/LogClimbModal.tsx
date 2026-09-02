@@ -1,9 +1,10 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Loader2, Video, X } from 'lucide-react';
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useAuth } from '../context/auth';
+import { useMyRouteLog } from '../hooks/useMyRouteLog';
 import { getErrorMessage, logError } from '../lib/errors';
-import { GRADE_ORDER, getGradeBadgeClasses, gradeFromRatingValue, gradeToRatingValue } from '../lib/grades';
+import { GRADE_ORDER, getGradeBadgeClasses, gradeToRatingValue } from '../lib/grades';
 import { supabase } from '../lib/supabase';
 import type { RouteGrade } from '../types';
 import { ErrorAlert } from './ErrorAlert';
@@ -37,32 +38,10 @@ export function LogClimbModal({ routeId, routeName, grade, sectionName, onClose 
   const [error, setError] = useState<string | null>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: existing } = useQuery({
-    queryKey: ['my-send', routeId, user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const [{ data: sendRow }, { data: ratingRow }] = await Promise.all([
-        supabase
-          .from('sends')
-          .select('date_completed')
-          .eq('route_id', routeId)
-          .eq('user_id', user!.id)
-          .maybeSingle(),
-        supabase
-          .from('difficulty_ratings')
-          .select('grade')
-          .eq('route_id', routeId)
-          .eq('user_id', user!.id)
-          .maybeSingle(),
-      ]);
-      return { send: sendRow, rating: ratingRow };
-    },
-  });
+  const { existing, isLogged: isUpdating, loggedGrade } = useMyRouteLog(routeId);
 
-  const isUpdating = !!existing?.send;
   const date = dateOverride ?? existing?.send?.date_completed ?? today();
-  const suggestedGrade =
-    gradeOverride ?? (existing?.rating?.grade != null ? gradeFromRatingValue(existing.rating.grade) : grade);
+  const suggestedGrade = gradeOverride ?? loggedGrade ?? grade;
 
   async function handleVideoChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -137,6 +116,7 @@ export function LogClimbModal({ routeId, routeName, grade, sectionName, onClose 
       queryClient.invalidateQueries({ queryKey: ['route-beta', routeId] }),
       queryClient.invalidateQueries({ queryKey: ['sends', user.id] }),
       queryClient.invalidateQueries({ queryKey: ['beta', user.id] }),
+      queryClient.invalidateQueries({ queryKey: ['my-send', routeId, user.id] }),
     ]);
 
     setSubmitting(false);

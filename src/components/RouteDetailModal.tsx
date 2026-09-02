@@ -6,12 +6,14 @@ import {
   ChevronsUpDown,
   ChevronUp,
   Mountain,
+  Pencil,
   PlusCircle,
   Video,
   X,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useMyRouteLog } from '../hooks/useMyRouteLog';
 import { useRouteDetail } from '../hooks/useRouteDetail';
 import { useSiblingRouteStats } from '../hooks/useSiblingRouteStats';
 import { compareGrades, GRADE_SWATCH_BORDER, getGradeBadgeClasses, getGradeColorHex } from '../lib/grades';
@@ -35,6 +37,7 @@ interface RouteDetailModalProps {
 
 export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }: RouteDetailModalProps) {
   const { route, isLoading, beta, stats } = useRouteDetail(routeId);
+  const { isLogged, loggedGrade } = useMyRouteLog(routeId);
   const [showLogClimb, setShowLogClimb] = useState(false);
   const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -199,10 +202,23 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
                   <button
                     type="button"
                     onClick={() => setShowLogClimb(true)}
-                    className="btn-primary text-sm flex items-center gap-2 shrink-0"
+                    className={`text-sm flex items-center gap-2 shrink-0 ${isLogged ? 'btn-secondary-light' : 'btn-primary'}`}
                   >
-                    <PlusCircle className="w-4 h-4" />
-                    Log Climb
+                    {isLogged ? (
+                      <>
+                        <CheckCircle className="w-4 h-4" />
+                        Logged
+                        {loggedGrade && (
+                          <span className={`badge ${getGradeBadgeClasses(loggedGrade)}`}>{loggedGrade}</span>
+                        )}
+                        <Pencil className="w-3.5 h-3.5" />
+                      </>
+                    ) : (
+                      <>
+                        <PlusCircle className="w-4 h-4" />
+                        Log Climb
+                      </>
+                    )}
                   </button>
                 </div>
 

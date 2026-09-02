@@ -1,8 +1,9 @@
-import { CheckCircle, Mountain, PlusCircle } from 'lucide-react';
+import { CheckCircle, Mountain, Pencil, PlusCircle } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { BetaList } from '../components/BetaList';
 import { LogClimbModal } from '../components/LogClimbModal';
+import { useMyRouteLog } from '../hooks/useMyRouteLog';
 import { useRouteDetail } from '../hooks/useRouteDetail';
 import { getGradeBadgeClasses } from '../lib/grades';
 
@@ -12,6 +13,7 @@ export function RouteDetail() {
   const [showLogClimb, setShowLogClimb] = useState(false);
 
   const { route, isLoading, beta, stats } = useRouteDetail(id);
+  const { isLogged, loggedGrade } = useMyRouteLog(id);
 
   if (isLoading) return <p className="text-gray-500 text-sm">Loading…</p>;
   if (!route) return <p className="text-gray-500 text-sm">Route not found.</p>;
@@ -45,10 +47,23 @@ export function RouteDetail() {
           <button
             type="button"
             onClick={() => setShowLogClimb(true)}
-            className="btn-primary text-sm flex items-center gap-2 shrink-0"
+            className={`text-sm flex items-center gap-2 shrink-0 ${isLogged ? 'btn-secondary-light' : 'btn-primary'}`}
           >
-            <PlusCircle className="w-4 h-4" />
-            Log Climb
+            {isLogged ? (
+              <>
+                <CheckCircle className="w-4 h-4" />
+                Logged
+                {loggedGrade && (
+                  <span className={`badge ${getGradeBadgeClasses(loggedGrade)}`}>{loggedGrade}</span>
+                )}
+                <Pencil className="w-3.5 h-3.5" />
+              </>
+            ) : (
+              <>
+                <PlusCircle className="w-4 h-4" />
+                Log Climb
+              </>
+            )}
           </button>
         </div>
 
