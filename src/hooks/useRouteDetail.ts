@@ -58,14 +58,13 @@ export function useRouteDetail(routeId: number | null) {
     queryKey: ['route-stats', routeId],
     enabled: routeId != null,
     queryFn: async () => {
-      const [{ count: sendCount }, { data: ratings }] = await Promise.all([
-        supabase
-          .from('sends')
-          .select('id', { count: 'exact', head: true })
-          .eq('route_id', routeId!)
-          .neq('send_type', 'attempt'),
+      const [{ data: sendRows }, { data: ratings }] = await Promise.all([
+        // A repeat send from the same user shouldn't inflate this count — dedupe to
+        // distinct senders below instead of counting every logged entry.
+        supabase.from('sends').select('user_id').eq('route_id', routeId!).neq('send_type', 'attempt'),
         supabase.from('difficulty_ratings').select('grade, quality').eq('route_id', routeId!),
       ]);
+      const sendCount = new Set((sendRows ?? []).map((r) => r.user_id)).size;
       const avg =
         ratings && ratings.length > 0 ? ratings.reduce((sum, r) => sum + r.grade, 0) / ratings.length : null;
 
@@ -84,7 +83,7 @@ export function useRouteDetail(routeId: number | null) {
         qualityValues.length > 0 ? qualityValues.reduce((sum, q) => sum + q, 0) / qualityValues.length : null;
 
       return {
-        sendCount: sendCount ?? 0,
+        sendCount,
         avgDifficulty: avg,
         communityGrade: avg != null ? gradeFromRatingValue(avg) : null,
         ratingCount: ratings?.length ?? 0,

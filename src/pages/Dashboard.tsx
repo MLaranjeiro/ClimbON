@@ -165,17 +165,32 @@ export function Dashboard() {
   // completion stats or grade milestones — those only count actual sends.
   const completedSends = (sends ?? []).filter((s) => s.send_type !== 'attempt');
 
-  const totalClimbs = completedSends.length;
-  const grades = completedSends.map((s) => s.route?.grade).filter((g): g is RouteGrade => !!g);
+  // A route sent multiple times (repeats, warmup laps) should only count once toward
+  // totals and the grade distribution — keep just the first time each route was sent.
+  // Streak stays on the raw list below since re-sending something still counts as
+  // climbing that day.
+  const firstSendByRoute = new Map<number, SendRow>();
+  for (const s of completedSends) {
+    const routeId = s.route?.id;
+    if (routeId == null) continue;
+    const existing = firstSendByRoute.get(routeId);
+    if (!existing || s.date_completed < existing.date_completed) {
+      firstSendByRoute.set(routeId, s);
+    }
+  }
+  const distinctSends = [...firstSendByRoute.values()];
+
+  const totalClimbs = distinctSends.length;
+  const grades = distinctSends.map((s) => s.route?.grade).filter((g): g is RouteGrade => !!g);
   const highestGrade = getHighestGrade(grades);
-  const climbsThisWeek = completedSends.filter((s) => isThisWeek(s.date_completed)).length;
-  const gradesThisWeek = completedSends
+  const climbsThisWeek = distinctSends.filter((s) => isThisWeek(s.date_completed)).length;
+  const gradesThisWeek = distinctSends
     .filter((s) => isThisWeek(s.date_completed))
     .map((s) => s.route?.grade)
     .filter((g): g is RouteGrade => !!g);
   const highestGradeThisWeek = getHighestGrade(gradesThisWeek);
-  const climbsThisMonth = completedSends.filter((s) => isThisMonth(s.date_completed)).length;
-  const gradesThisMonth = completedSends
+  const climbsThisMonth = distinctSends.filter((s) => isThisMonth(s.date_completed)).length;
+  const gradesThisMonth = distinctSends
     .filter((s) => isThisMonth(s.date_completed))
     .map((s) => s.route?.grade)
     .filter((g): g is RouteGrade => !!g);
@@ -183,7 +198,7 @@ export function Dashboard() {
   const weeklyStreak = computeWeeklyStreak(completedSends.map((s) => s.date_completed));
 
   const gymSendCounts = new Map<string, number>();
-  for (const s of completedSends) {
+  for (const s of distinctSends) {
     const name = s.route?.gym?.gym_name;
     if (name) gymSendCounts.set(name, (gymSendCounts.get(name) ?? 0) + 1);
   }
@@ -197,7 +212,7 @@ export function Dashboard() {
   }
   const activeGym = homeGym?.gym_name ?? mostFrequentGym;
 
-  const periodSends = completedSends.filter((s) => {
+  const periodSends = distinctSends.filter((s) => {
     if (gradePeriod === 'week') return isThisWeek(s.date_completed);
     if (gradePeriod === 'month') return isThisMonth(s.date_completed);
     if (gradePeriod === '3months') return isWithinLastMonths(s.date_completed, 3);

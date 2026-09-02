@@ -17,13 +17,21 @@ export function useSiblingRouteStats(routeIds: number[]) {
     enabled: routeIds.length > 0,
     queryFn: async () => {
       const [{ data: sendRows }, { data: ratingRows }] = await Promise.all([
-        supabase.from('sends').select('route_id').in('route_id', routeIds).neq('send_type', 'attempt'),
+        supabase.from('sends').select('route_id, user_id').in('route_id', routeIds).neq('send_type', 'attempt'),
         supabase.from('difficulty_ratings').select('route_id, grade').in('route_id', routeIds),
       ]);
 
-      const sendCounts = new Map<number, number>();
+      // A repeat send from the same user shouldn't inflate this count — dedupe to
+      // distinct senders per route instead of counting every logged entry.
+      const sendersByRoute = new Map<number, Set<string>>();
       for (const row of sendRows ?? []) {
-        sendCounts.set(row.route_id, (sendCounts.get(row.route_id) ?? 0) + 1);
+        const senders = sendersByRoute.get(row.route_id) ?? new Set<string>();
+        senders.add(row.user_id);
+        sendersByRoute.set(row.route_id, senders);
+      }
+      const sendCounts = new Map<number, number>();
+      for (const [routeId, senders] of sendersByRoute) {
+        sendCounts.set(routeId, senders.size);
       }
 
       const ratingTotals = new Map<number, { sum: number; count: number }>();
