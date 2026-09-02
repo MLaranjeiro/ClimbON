@@ -239,7 +239,7 @@ export function LogClimbForm({ routeId, routeName, grade, sectionName, onDone }:
 
       <div>
         <label className="block text-sm text-gray-600 mb-2">What do you think the grade should be?</label>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-6 gap-2">
           {GRADE_ORDER.map((g) => {
             const active = suggestedGrade === g;
             return (
@@ -247,7 +247,7 @@ export function LogClimbForm({ routeId, routeName, grade, sectionName, onDone }:
                 key={g}
                 type="button"
                 onClick={() => setGradeOverride(g)}
-                className={`h-9 min-w-9 px-2 rounded-lg text-sm font-semibold transition-colors ${
+                className={`w-full h-9 rounded-lg text-sm font-semibold transition-colors ${
                   active ? getGradeBadgeClasses(g) : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
