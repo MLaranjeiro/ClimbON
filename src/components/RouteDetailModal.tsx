@@ -295,11 +295,11 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
                         </span>
                       </div>
 
-                      {/* Fixed height regardless of how many distinct grades are rated, so the
-                          card never jitters when switching climbs. Empty state mirrors a real
-                          row's shape rather than leaving blank space, so it reads as "no data"
-                          instead of a layout gap. */}
-                      <div className="mt-3 h-20 flex flex-col justify-center">
+                      {/* Empty state mirrors a real row's shape (not blank space), so a route
+                          with 0 or 1 rating sizes identically — both render exactly one row.
+                          Only caps/scrolls once a route has enough distinct grades rated to
+                          need it. */}
+                      <div className="mt-3">
                         {stats && stats.ratingDistribution.length > 0 ? (
                           <div className="space-y-2 max-h-20 overflow-y-auto pr-1">
                             {stats.ratingDistribution.map((row) => {
@@ -311,11 +311,10 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
                                   </span>
                                   <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
                                     <div
-                                      className="h-full rounded-full border"
+                                      className="h-full rounded-full"
                                       style={{
                                         width: `${(row.count / maxCount) * 100}%`,
                                         backgroundColor: getGradeColorHex(row.grade),
-                                        borderColor: GRADE_SWATCH_BORDER,
                                       }}
                                     />
                                   </div>
@@ -334,7 +333,7 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
                       </div>
                     </div>
 
-                    <div className="pt-4 border-t border-gray-100">
+                    <div className="pt-4">
                       <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                         <Star className="w-3.5 h-3.5" />
                         Quality
