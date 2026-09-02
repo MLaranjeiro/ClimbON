@@ -119,7 +119,7 @@ function getGradeSolidBadgeProps(grade: RouteGrade): { className: string; style?
 
 export function Dashboard() {
   const { user, profile, gymMemberships, homeGym } = useAuth();
-  const [gradePeriod, setGradePeriod] = useState<GradePeriod>('month');
+  const [gradePeriod, setGradePeriod] = useState<GradePeriod>('all');
   const [gradePeriodMenuOpen, setGradePeriodMenuOpen] = useState(false);
 
   const { data: sends, isLoading: sendsLoading } = useQuery({
