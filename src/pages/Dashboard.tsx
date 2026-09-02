@@ -282,7 +282,7 @@ export function Dashboard() {
             </div>
 
             <Link
-              to={homeGym ? `/routes/${homeGym.slug}` : '/routes'}
+              to={homeGym ? `/gyms/${homeGym.slug}` : '/gyms'}
               className="inline-flex items-center justify-center gap-2 rounded-full shrink-0 bg-brand-500 text-white font-bold py-2.5 px-5 shadow-sm shadow-brand-900/30 hover:bg-brand-600 transition-colors duration-200"
             >
               <Plus className="w-4 h-4" />
@@ -529,7 +529,7 @@ export function Dashboard() {
                     return (
                       <Link
                         key={send.id}
-                        to={`/routes/${gymSlug}/climbs/${routeId}`}
+                        to={`/gyms/${gymSlug}/climbs/${routeId}`}
                         className={`${rowClasses} cursor-pointer`}
                       >
                         {rowContent}

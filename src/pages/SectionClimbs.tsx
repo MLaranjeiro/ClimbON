@@ -17,7 +17,7 @@ export function SectionClimbs() {
       <SectionClimbsContent
         gymId={gym.id}
         sectionId={parsedSectionId}
-        onSelectRoute={(routeId) => navigate(`/routes/${gymSlug}/climbs/${routeId}`)}
+        onSelectRoute={(routeId) => navigate(`/gyms/${gymSlug}/climbs/${routeId}`)}
       />
     </div>
   );

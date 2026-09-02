@@ -82,7 +82,7 @@ export function GymPicker() {
           {matches.map((gym) => (
             <Link
               key={gym.id}
-              to={`/routes/${gym.slug}`}
+              to={`/gyms/${gym.slug}`}
               className="group relative h-[145px] sm:h-[220px] overflow-hidden rounded-2xl bg-gray-300 text-white"
             >
               {gym.cover_image_url ? (

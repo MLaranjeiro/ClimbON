@@ -20,7 +20,7 @@ export function RouteDetail() {
     <div className="max-w-[1400px] mx-auto">
       <div className="max-w-2xl space-y-6">
         <div>
-          <Link to={`/routes/${gymSlug}`} className="text-sm text-brand-600 hover:underline">
+          <Link to={`/gyms/${gymSlug}`} className="text-sm text-brand-600 hover:underline">
             {route.gym?.gym_name ?? 'Gym'}
           </Link>
           {route.section && <span className="text-sm text-gray-400"> · {route.section.section_name}</span>}
