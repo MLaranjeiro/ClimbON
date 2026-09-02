@@ -17,7 +17,7 @@ export function useSiblingRouteStats(routeIds: number[]) {
     enabled: routeIds.length > 0,
     queryFn: async () => {
       const [{ data: sendRows }, { data: ratingRows }] = await Promise.all([
-        supabase.from('sends').select('route_id').in('route_id', routeIds),
+        supabase.from('sends').select('route_id').in('route_id', routeIds).neq('send_type', 'attempt'),
         supabase.from('difficulty_ratings').select('route_id, grade').in('route_id', routeIds),
       ]);
 

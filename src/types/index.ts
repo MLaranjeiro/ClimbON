@@ -87,11 +87,15 @@ export interface Route {
   avg_difficulty?: number | null;
 }
 
+export type SendType = 'flash' | 'send' | 'repeat' | 'attempt';
+
 export interface Send {
   id: number;
   user_id: string;
   route_id: number;
   date_completed: string;
+  send_type: SendType;
+  attempts: number;
   created_at: string;
   route?: Route;
   profile?: UserProfile;

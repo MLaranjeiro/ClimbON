@@ -59,7 +59,11 @@ export function useRouteDetail(routeId: number | null) {
     enabled: routeId != null,
     queryFn: async () => {
       const [{ count: sendCount }, { data: ratings }] = await Promise.all([
-        supabase.from('sends').select('id', { count: 'exact', head: true }).eq('route_id', routeId!),
+        supabase
+          .from('sends')
+          .select('id', { count: 'exact', head: true })
+          .eq('route_id', routeId!)
+          .neq('send_type', 'attempt'),
         supabase.from('difficulty_ratings').select('grade').eq('route_id', routeId!),
       ]);
       const avg =
