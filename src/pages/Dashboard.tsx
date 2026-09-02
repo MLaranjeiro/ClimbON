@@ -249,8 +249,8 @@ export function Dashboard() {
       chipBg: 'bg-blue-500/15',
     },
     {
-      label: 'Current Streak',
-      value: weeklyStreak > 0 ? `${weeklyStreak} wk${weeklyStreak > 1 ? 's' : ''}` : '0 days',
+      label: 'Weekly Streak',
+      value: weeklyStreak,
       caption: weeklyStreak === 0 ? 'Start your streak today' : undefined,
       icon: Flame,
       tint: 'bg-orange-50 border-orange-100',
