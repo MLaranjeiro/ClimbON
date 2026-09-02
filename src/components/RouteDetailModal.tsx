@@ -6,7 +6,6 @@ import {
   ChevronsUpDown,
   ChevronUp,
   Mountain,
-  Plus,
   PlusCircle,
   Star,
   Video,
@@ -39,7 +38,7 @@ interface RouteDetailModalProps {
 
 export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }: RouteDetailModalProps) {
   const { route, isLoading, beta, stats } = useRouteDetail(routeId);
-  const { isLogged } = useMyRouteLog(routeId);
+  const { isLogged, loggedGrade } = useMyRouteLog(routeId);
   const [view, setView] = useState<View>('detail');
   const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -226,24 +225,20 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
                     {route.section && (
                       <span className="text-sm text-gray-400 shrink-0">on {route.section.section_name}</span>
                     )}
+                    {isLogged && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 text-xs font-semibold shrink-0">
+                        <CheckCircle className="w-3 h-3" />
+                        Sent{loggedGrade ? ` (${loggedGrade})` : ''}
+                      </span>
+                    )}
                   </div>
                   <button
                     type="button"
                     onClick={() => setView('log')}
-                    className={`text-sm flex items-center gap-2 shrink-0 ${isLogged ? 'btn-secondary-light' : 'btn-primary'}`}
+                    className="btn-primary text-sm flex items-center gap-2 shrink-0"
                   >
-                    {isLogged ? (
-                      <>
-                        <CheckCircle className="w-4 h-4" />
-                        Logged
-                        <Plus className="w-3.5 h-3.5" />
-                      </>
-                    ) : (
-                      <>
-                        <PlusCircle className="w-4 h-4" />
-                        Log Climb
-                      </>
-                    )}
+                    <PlusCircle className="w-4 h-4" />
+                    {isLogged ? 'Log Again' : 'Log Climb'}
                   </button>
                 </div>
 

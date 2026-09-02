@@ -1,4 +1,4 @@
-import { CheckCircle, Mountain, Plus, PlusCircle } from 'lucide-react';
+import { CheckCircle, Mountain, PlusCircle } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { BetaList } from '../components/BetaList';
@@ -42,28 +42,21 @@ export function RouteDetail() {
             <div className="flex items-center gap-2 mt-2">
               <span className={`badge ${getGradeBadgeClasses(route.grade)}`}>{route.grade}</span>
               {route.status === 'inactive' && <span className="badge bg-gray-100 text-gray-500">Retired</span>}
+              {isLogged && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 text-xs font-semibold">
+                  <CheckCircle className="w-3 h-3" />
+                  Sent{loggedGrade ? ` (${loggedGrade})` : ''}
+                </span>
+              )}
             </div>
           </div>
           <button
             type="button"
             onClick={() => setShowLogClimb(true)}
-            className={`text-sm flex items-center gap-2 shrink-0 ${isLogged ? 'btn-secondary-light' : 'btn-primary'}`}
+            className="btn-primary text-sm flex items-center gap-2 shrink-0"
           >
-            {isLogged ? (
-              <>
-                <CheckCircle className="w-4 h-4" />
-                Logged
-                {loggedGrade && (
-                  <span className={`badge ${getGradeBadgeClasses(loggedGrade)}`}>{loggedGrade}</span>
-                )}
-                <Plus className="w-3.5 h-3.5" />
-              </>
-            ) : (
-              <>
-                <PlusCircle className="w-4 h-4" />
-                Log Climb
-              </>
-            )}
+            <PlusCircle className="w-4 h-4" />
+            {isLogged ? 'Log Again' : 'Log Climb'}
           </button>
         </div>
 
