@@ -1,4 +1,4 @@
-import { CheckCircle, Mountain, Pencil, PlusCircle } from 'lucide-react';
+import { CheckCircle, Mountain, Plus, PlusCircle } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { BetaList } from '../components/BetaList';
@@ -56,7 +56,7 @@ export function RouteDetail() {
                 {loggedGrade && (
                   <span className={`badge ${getGradeBadgeClasses(loggedGrade)}`}>{loggedGrade}</span>
                 )}
-                <Pencil className="w-3.5 h-3.5" />
+                <Plus className="w-3.5 h-3.5" />
               </>
             ) : (
               <>

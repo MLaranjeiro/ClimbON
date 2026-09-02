@@ -6,7 +6,7 @@ import {
   ChevronsUpDown,
   ChevronUp,
   Mountain,
-  Pencil,
+  Plus,
   PlusCircle,
   Video,
   X,
@@ -112,9 +112,7 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
-                <h2 className="flex-1 text-center text-lg font-bold text-gray-900 truncate px-2">
-                  {isLogged ? 'Update Log' : 'Log Climb'}
-                </h2>
+                <h2 className="flex-1 text-center text-lg font-bold text-gray-900 truncate px-2">Log Climb</h2>
               </>
             ) : (
               <>
@@ -234,7 +232,7 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
                       <>
                         <CheckCircle className="w-4 h-4" />
                         Logged
-                        <Pencil className="w-3.5 h-3.5" />
+                        <Plus className="w-3.5 h-3.5" />
                       </>
                     ) : (
                       <>

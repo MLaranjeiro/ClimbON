@@ -1,4 +1,3 @@
-import { useMyRouteLog } from '../hooks/useMyRouteLog';
 import type { RouteGrade } from '../types';
 import { LogClimbForm } from './LogClimbForm';
 import { ModalShell } from './ModalShell';
@@ -12,10 +11,8 @@ interface LogClimbModalProps {
 }
 
 export function LogClimbModal({ routeId, routeName, grade, sectionName, onClose }: LogClimbModalProps) {
-  const { isLogged } = useMyRouteLog(routeId);
-
   return (
-    <ModalShell title={isLogged ? 'Update Log' : 'Log Climb'} onClose={onClose}>
+    <ModalShell title="Log Climb" onClose={onClose}>
       <LogClimbForm
         routeId={routeId}
         routeName={routeName}
