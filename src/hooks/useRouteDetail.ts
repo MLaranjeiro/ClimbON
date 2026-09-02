@@ -64,7 +64,7 @@ export function useRouteDetail(routeId: number | null) {
           .select('id', { count: 'exact', head: true })
           .eq('route_id', routeId!)
           .neq('send_type', 'attempt'),
-        supabase.from('difficulty_ratings').select('grade').eq('route_id', routeId!),
+        supabase.from('difficulty_ratings').select('grade, quality').eq('route_id', routeId!),
       ]);
       const avg =
         ratings && ratings.length > 0 ? ratings.reduce((sum, r) => sum + r.grade, 0) / ratings.length : null;
@@ -79,12 +79,18 @@ export function useRouteDetail(routeId: number | null) {
         count: counts.get(grade)!,
       }));
 
+      const qualityValues = (ratings ?? []).map((r) => r.quality).filter((q): q is number => q != null);
+      const avgQuality =
+        qualityValues.length > 0 ? qualityValues.reduce((sum, q) => sum + q, 0) / qualityValues.length : null;
+
       return {
         sendCount: sendCount ?? 0,
         avgDifficulty: avg,
         communityGrade: avg != null ? gradeFromRatingValue(avg) : null,
         ratingCount: ratings?.length ?? 0,
         ratingDistribution,
+        avgQuality,
+        qualityCount: qualityValues.length,
       };
     },
   });

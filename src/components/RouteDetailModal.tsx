@@ -8,6 +8,7 @@ import {
   Mountain,
   Plus,
   PlusCircle,
+  Star,
   Video,
   X,
 } from 'lucide-react';
@@ -279,46 +280,71 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
                   <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
                     Community grading
                   </h3>
-                  <div className="rounded-lg border border-gray-200 p-4">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                      <CheckCircle className="w-3.5 h-3.5" />
-                      Senders
-                    </div>
-                    {stats?.communityGrade ? (
-                      <div className="flex items-baseline gap-2 mb-4">
-                        <span className="text-2xl font-bold text-gray-900">{stats.communityGrade}</span>
+                  <div className="rounded-lg border border-gray-200 p-4 min-h-[132px] space-y-4">
+                    <div>
+                      <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        Senders
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-bold text-gray-900">{stats?.communityGrade ?? '—'}</span>
                         <span className="text-sm text-gray-500">
-                          avg {stats.avgDifficulty!.toFixed(1)} · {stats.ratingCount} send
-                          {stats.ratingCount === 1 ? '' : 's'}
+                          {stats?.communityGrade
+                            ? `avg ${stats.avgDifficulty!.toFixed(1)} · ${stats.ratingCount} send${stats.ratingCount === 1 ? '' : 's'}`
+                            : 'No community grades yet'}
                         </span>
                       </div>
-                    ) : (
-                      <p className="text-sm text-gray-500 mb-4">No community grades yet.</p>
-                    )}
 
-                    {stats && stats.ratingDistribution.length > 0 && (
-                      <div className="space-y-2">
-                        {stats.ratingDistribution.map((row) => {
-                          const maxCount = Math.max(...stats.ratingDistribution.map((r) => r.count));
-                          return (
-                            <div key={row.grade} className="flex items-center gap-3">
-                              <span className="w-8 text-xs font-semibold text-gray-900 shrink-0">{row.grade}</span>
-                              <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
-                                <div
-                                  className="h-full rounded-full border"
-                                  style={{
-                                    width: `${(row.count / maxCount) * 100}%`,
-                                    backgroundColor: getGradeColorHex(row.grade),
-                                    borderColor: GRADE_SWATCH_BORDER,
-                                  }}
-                                />
+                      {stats && stats.ratingDistribution.length > 0 && (
+                        <div className="space-y-2 mt-3">
+                          {stats.ratingDistribution.map((row) => {
+                            const maxCount = Math.max(...stats.ratingDistribution.map((r) => r.count));
+                            return (
+                              <div key={row.grade} className="flex items-center gap-3">
+                                <span className="w-8 text-xs font-semibold text-gray-900 shrink-0">{row.grade}</span>
+                                <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full border"
+                                    style={{
+                                      width: `${(row.count / maxCount) * 100}%`,
+                                      backgroundColor: getGradeColorHex(row.grade),
+                                      borderColor: GRADE_SWATCH_BORDER,
+                                    }}
+                                  />
+                                </div>
+                                <span className="w-4 text-xs text-gray-500 text-right shrink-0">{row.count}</span>
                               </div>
-                              <span className="w-4 text-xs text-gray-500 text-right shrink-0">{row.count}</span>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-4 border-t border-gray-100">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                        <Star className="w-3.5 h-3.5" />
+                        Quality
                       </div>
-                    )}
+                      <div className="flex items-baseline gap-2">
+                        <div className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map((n) => {
+                            const filled = stats?.avgQuality != null && n <= Math.round(stats.avgQuality);
+                            return (
+                              <Star
+                                key={n}
+                                className={`w-4 h-4 ${filled ? 'text-amber-400' : 'text-gray-200'}`}
+                                fill={filled ? 'currentColor' : 'none'}
+                              />
+                            );
+                          })}
+                        </div>
+                        <span className="text-sm text-gray-500">
+                          {stats?.avgQuality != null
+                            ? `${stats.avgQuality.toFixed(1)} · ${stats.qualityCount} rating${stats.qualityCount === 1 ? '' : 's'}`
+                            : 'No ratings yet'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </section>
 
