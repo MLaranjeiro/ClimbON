@@ -1,6 +1,6 @@
-import { Check } from 'lucide-react';
+import { Bookmark, Check } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { useMySentRouteIds } from '../hooks/useMySentRouteIds';
+import { useMyRouteStatuses } from '../hooks/useMyRouteStatuses';
 import { compareGrades, getGradeColorHex, getGradePinBorderHex, getGradePinIconHex } from '../lib/grades';
 import type { Gym } from '../types';
 import { GymMapViewer } from './GymMapViewer';
@@ -18,7 +18,7 @@ export function GymMapContent({ gym, sections, routes }: GymMapContentProps) {
   const [selectedRouteId, setSelectedRouteId] = useState<number | null>(null);
 
   const placedRoutes = routes.filter((r) => r.map_x != null && r.map_y != null);
-  const sentRouteIds = useMySentRouteIds(placedRoutes.map((r) => r.id));
+  const routeStatuses = useMyRouteStatuses(placedRoutes.map((r) => r.id));
   const selectedRoute = routes.find((r) => r.id === selectedRouteId) ?? null;
 
   const siblingRoutes = useMemo(() => {
@@ -46,7 +46,8 @@ export function GymMapContent({ gym, sections, routes }: GymMapContentProps) {
       {gym.map_image_url ? (
         <GymMapViewer imageUrl={gym.map_image_url}>
           {placedRoutes.map((r) => {
-            const sent = sentRouteIds.has(r.id);
+            const status = routeStatuses.get(r.id);
+            const iconColor = getGradePinIconHex(r.grade);
             return (
               <button
                 key={r.id}
@@ -59,9 +60,12 @@ export function GymMapContent({ gym, sections, routes }: GymMapContentProps) {
                   backgroundColor: getGradeColorHex(r.grade),
                   borderColor: getGradePinBorderHex(r.grade),
                 }}
-                title={`${r.route_name} (${r.grade})${sent ? ' — sent' : ''}`}
+                title={`${r.route_name} (${r.grade})${status ? ` — ${status}` : ''}`}
               >
-                {sent && <Check className="w-2.5 h-2.5" style={{ color: getGradePinIconHex(r.grade) }} strokeWidth={3} />}
+                {status === 'sent' && <Check className="w-2.5 h-2.5" style={{ color: iconColor }} strokeWidth={3} />}
+                {status === 'attempted' && (
+                  <Bookmark className="w-2.5 h-2.5" style={{ color: iconColor }} fill={iconColor} />
+                )}
               </button>
             );
           })}
