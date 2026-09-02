@@ -127,7 +127,12 @@ export function LogClimbForm({ routeId, routeName, grade, sectionName, onDone }:
         },
         { onConflict: 'route_id,user_id' },
       );
-    if (ratingError) logError('log-climb.rating-upsert', ratingError, { routeId, userId: user.id });
+    if (ratingError) {
+      setError(getErrorMessage(ratingError, 'Send logged, but your grade/quality rating failed to save.'));
+      logError('log-climb.rating-upsert', ratingError, { routeId, userId: user.id });
+      setSubmitting(false);
+      return;
+    }
 
     if (notes.trim() || videoUrl.trim()) {
       const { error: betaError } = await supabase.from('beta').insert({
