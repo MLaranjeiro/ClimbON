@@ -116,5 +116,6 @@ export interface DifficultyRating {
   route_id: number;
   user_id: string;
   grade: number;
+  quality: number | null;
   created_at: string;
 }

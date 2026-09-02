@@ -33,7 +33,7 @@ export function useMyRouteLog(routeId: number) {
           .order('created_at', { ascending: false }),
         supabase
           .from('difficulty_ratings')
-          .select('grade')
+          .select('grade, quality')
           .eq('route_id', routeId)
           .eq('user_id', user!.id)
           .maybeSingle(),
@@ -47,6 +47,7 @@ export function useMyRouteLog(routeId: number) {
   const hasAttempted = sends.length > 0;
   const latestSend = sends[0] ?? null;
   const loggedGrade = data?.rating?.grade != null ? gradeFromRatingValue(data.rating.grade) : null;
+  const loggedQuality = data?.rating?.quality ?? null;
 
-  return { sends, isLogged, hasAttempted, latestSend, loggedGrade };
+  return { sends, isLogged, hasAttempted, latestSend, loggedGrade, loggedQuality };
 }

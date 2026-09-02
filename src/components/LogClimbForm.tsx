@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { Circle, Loader2, Repeat, Video, X, Zap } from 'lucide-react';
+import { Circle, Loader2, Repeat, Star, Video, X, Zap } from 'lucide-react';
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useAuth } from '../context/auth';
 import { useMyRouteLog } from '../hooks/useMyRouteLog';
@@ -42,6 +42,9 @@ export function LogClimbForm({ routeId, routeName, grade, sectionName, onDone }:
   const [outcomeSlot, setOutcomeSlot] = useState<OutcomeSlot | null>(null);
   const [dateOverride, setDateOverride] = useState<string | null>(null);
   const [gradeOverride, setGradeOverride] = useState<RouteGrade | null>(null);
+  // null = user hasn't touched the stars yet, so it falls back to their existing rating.
+  // 0 is a deliberate "cleared" state (tapping the active star again), distinct from null.
+  const [qualityOverride, setQualityOverride] = useState<number | null>(null);
   const [notes, setNotes] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [videoFileName, setVideoFileName] = useState('');
@@ -50,10 +53,11 @@ export function LogClimbForm({ routeId, routeName, grade, sectionName, onDone }:
   const [error, setError] = useState<string | null>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
-  const { isLogged, loggedGrade } = useMyRouteLog(routeId);
+  const { isLogged, loggedGrade, loggedQuality } = useMyRouteLog(routeId);
 
   const date = dateOverride ?? today();
   const suggestedGrade = gradeOverride ?? loggedGrade ?? grade;
+  const suggestedQuality = qualityOverride ?? loggedQuality;
 
   async function handleVideoChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -87,7 +91,7 @@ export function LogClimbForm({ routeId, routeName, grade, sectionName, onDone }:
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!user || !outcomeSlot) return;
+    if (!user || !outcomeSlot || !suggestedQuality) return;
     setSubmitting(true);
     setError(null);
 
@@ -115,7 +119,12 @@ export function LogClimbForm({ routeId, routeName, grade, sectionName, onDone }:
     const { error: ratingError } = await supabase
       .from('difficulty_ratings')
       .upsert(
-        { route_id: routeId, user_id: user.id, grade: gradeToRatingValue(suggestedGrade) },
+        {
+          route_id: routeId,
+          user_id: user.id,
+          grade: gradeToRatingValue(suggestedGrade),
+          quality: suggestedQuality,
+        },
         { onConflict: 'route_id,user_id' },
       );
     if (ratingError) logError('log-climb.rating-upsert', ratingError, { routeId, userId: user.id });
@@ -223,6 +232,26 @@ export function LogClimbForm({ routeId, routeName, grade, sectionName, onDone }:
       </div>
 
       <div>
+        <label className="block text-sm text-gray-600 mb-2">Rate this climb</label>
+        <div className="flex items-center gap-1">
+          {[1, 2, 3, 4, 5].map((n) => {
+            const filled = suggestedQuality != null && n <= suggestedQuality;
+            return (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setQualityOverride(n === suggestedQuality ? 0 : n)}
+                aria-label={`${n} star${n > 1 ? 's' : ''}`}
+                className="p-0.5 text-gray-300 hover:text-amber-400 transition-colors"
+              >
+                <Star className={`w-5 h-5 ${filled ? 'text-amber-400' : ''}`} fill={filled ? 'currentColor' : 'none'} />
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div>
         <label htmlFor="logNotes" className="block text-sm text-gray-600 mb-1">
           Notes (optional)
         </label>
@@ -286,7 +315,11 @@ export function LogClimbForm({ routeId, routeName, grade, sectionName, onDone }:
 
       {error && <ErrorAlert message={error} light />}
 
-      <button type="submit" className="btn-primary w-full" disabled={!outcomeSlot || submitting || videoUploading}>
+      <button
+        type="submit"
+        className="btn-primary w-full"
+        disabled={!outcomeSlot || !suggestedQuality || submitting || videoUploading}
+      >
         {submitting ? 'Logging…' : `Log Climb for ${routeName}`}
       </button>
     </form>
