@@ -47,11 +47,6 @@ export function getGradeBadgeClasses(grade: RouteGrade): string {
   return GRADE_BUCKETS.find((b) => b.grades.includes(grade))?.badge ?? 'bg-gray-100 text-gray-700';
 }
 
-export function meetsGrade(grade: RouteGrade | null | undefined, threshold: RouteGrade): boolean {
-  if (!grade) return false;
-  return GRADE_ORDER.indexOf(grade) >= GRADE_ORDER.indexOf(threshold);
-}
-
 // Assumes difficulty_ratings.grade stores the plain V-number (V0 = 0, V1 = 1, … V10 = 10),
 // clamped to the V0–V10 range.
 export function gradeFromRatingValue(value: number): RouteGrade {
