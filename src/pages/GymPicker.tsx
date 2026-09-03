@@ -44,13 +44,15 @@ export function GymPicker() {
   }
 
   const q = query.trim().toLowerCase();
-  const matches = (gyms ?? []).filter(
-    (g) =>
-      !q ||
-      g.gym_name.toLowerCase().includes(q) ||
-      g.city?.toLowerCase().includes(q) ||
-      g.location_address?.toLowerCase().includes(q),
-  );
+  const matches = (gyms ?? [])
+    .filter(
+      (g) =>
+        !q ||
+        g.gym_name.toLowerCase().includes(q) ||
+        g.city?.toLowerCase().includes(q) ||
+        g.location_address?.toLowerCase().includes(q),
+    )
+    .sort((a, b) => Number(b.id === homeGym?.id) - Number(a.id === homeGym?.id));
 
   return (
     <div className="max-w-[1400px] mx-auto space-y-6">
