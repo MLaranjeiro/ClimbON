@@ -563,7 +563,10 @@ export function GymProfileEditor({ gymId }: { gymId: number }) {
                     if (filtered.length === 0) {
                       return <p className="text-sm text-gray-500">No routes match.</p>;
                     }
-                    return filtered.map((r) => (
+                    const notPlaced = filtered.filter((r) => r.map_x == null);
+                    const placed = filtered.filter((r) => r.map_x != null);
+
+                    const renderRoute = (r: (typeof filtered)[number]) => (
                       <div
                         key={r.id}
                         className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 px-3 py-2"
@@ -601,7 +604,32 @@ export function GymProfileEditor({ gymId }: { gymId: number }) {
                           )}
                         </div>
                       </div>
-                    ));
+                    );
+
+                    return (
+                      <>
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1.5">
+                            Not placed ({notPlaced.length})
+                          </p>
+                          {notPlaced.length === 0 ? (
+                            <p className="text-sm text-gray-400 italic">All routes placed.</p>
+                          ) : (
+                            <div className="space-y-2">{notPlaced.map(renderRoute)}</div>
+                          )}
+                        </div>
+                        <div className="mt-4">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1.5">
+                            Placed ({placed.length})
+                          </p>
+                          {placed.length === 0 ? (
+                            <p className="text-sm text-gray-400 italic">No routes placed yet.</p>
+                          ) : (
+                            <div className="space-y-2">{placed.map(renderRoute)}</div>
+                          )}
+                        </div>
+                      </>
+                    );
                   })()
                 )}
               </div>
