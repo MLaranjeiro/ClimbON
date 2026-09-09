@@ -16,6 +16,7 @@ export interface MapRoute {
 export interface MapSection {
   id: number;
   section_name: string;
+  image_url: string | null;
 }
 
 export function useGymMapData(gymId: number | undefined) {
@@ -33,7 +34,10 @@ export function useGymMapData(gymId: number | undefined) {
     queryKey: ['gym-sections-map', gymId],
     enabled: gymId != null,
     queryFn: async () => {
-      const { data, error } = await supabase.from('sections').select('id, section_name').eq('gym_id', gymId!);
+      const { data, error } = await supabase
+        .from('sections')
+        .select('id, section_name, image_url')
+        .eq('gym_id', gymId!);
       if (error) throw error;
       return data as MapSection[];
     },

@@ -11,6 +11,7 @@ import { ErrorAlert } from './ErrorAlert';
 interface GymSectionRow {
   id: number;
   section_name: string;
+  image_url: string | null;
 }
 
 interface GymRouteRow {
@@ -67,7 +68,7 @@ export function GymProfileEditor({ gymId }: { gymId: number }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('sections')
-        .select('id, section_name')
+        .select('id, section_name, image_url')
         .eq('gym_id', gymId)
         .order('section_name');
       if (error) throw error;
@@ -107,6 +108,10 @@ export function GymProfileEditor({ gymId }: { gymId: number }) {
   const [mapUploading, setMapUploading] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const mapInputRef = useRef<HTMLInputElement>(null);
+
+  const [sectionUploading, setSectionUploading] = useState<Record<number, boolean>>({});
+  const [sectionErrors, setSectionErrors] = useState<Record<number, string | null>>({});
+  const sectionInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
   const [placingRouteId, setPlacingRouteId] = useState<number | null>(null);
   const [placeError, setPlaceError] = useState<string | null>(null);
@@ -180,6 +185,41 @@ export function GymProfileEditor({ gymId }: { gymId: number }) {
       logError('gym-profile.map-upload', err, { gymId });
     }
     setMapUploading(false);
+  }
+
+  async function invalidateSectionQueries() {
+    await queryClient.invalidateQueries({
+      predicate: (query) => typeof query.queryKey[0] === 'string' && query.queryKey[0].startsWith('gym-sections'),
+    });
+  }
+
+  async function handleSectionImageChange(e: ChangeEvent<HTMLInputElement>, sectionId: number) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setSectionErrors((prev) => ({ ...prev, [sectionId]: null }));
+    setSectionUploading((prev) => ({ ...prev, [sectionId]: true }));
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `${gymId}/section/${sectionId}/${crypto.randomUUID()}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from('gym-assets').upload(path, file);
+      if (uploadError) throw uploadError;
+      const url = supabase.storage.from('gym-assets').getPublicUrl(path).data.publicUrl;
+      const { error: updateError } = await supabase.from('sections').update({ image_url: url }).eq('id', sectionId);
+      if (updateError) throw updateError;
+      await invalidateSectionQueries();
+    } catch (err) {
+      setSectionErrors((prev) => ({ ...prev, [sectionId]: getErrorMessage(err, 'Upload failed.') }));
+      logError('gym-profile.section-image-upload', err, { gymId, sectionId });
+    }
+    setSectionUploading((prev) => ({ ...prev, [sectionId]: false }));
+  }
+
+  async function removeSectionImage(sectionId: number) {
+    const { error } = await supabase.from('sections').update({ image_url: null }).eq('id', sectionId);
+    if (!error) {
+      await invalidateSectionQueries();
+    }
   }
 
   async function handleSave(e: FormEvent) {
@@ -493,6 +533,77 @@ export function GymProfileEditor({ gymId }: { gymId: number }) {
           </div>
         </form>
       </section>
+
+      {(sections ?? []).length > 0 && (
+        <section className="card-light">
+          <h2 className="text-lg font-bold text-gray-900 mb-1">Wall images</h2>
+          <p className="text-sm text-gray-500 mb-4">
+            Add a photo for each wall — shown as its thumbnail in the wall picker.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {(sections ?? []).map((section) => (
+              <div key={section.id}>
+                <label className="block text-sm text-gray-600 mb-1">{section.section_name}</label>
+                {section.image_url ? (
+                  <div className="relative">
+                    <img
+                      src={section.image_url}
+                      alt=""
+                      className="w-full h-28 object-cover rounded-lg border border-gray-200"
+                    />
+                    <div className="absolute top-2 right-2 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => sectionInputRefs.current[section.id]?.click()}
+                        className="bg-white/90 hover:bg-white text-gray-700 text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-sm"
+                      >
+                        Change
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeSectionImage(section.id)}
+                        className="bg-white/90 hover:bg-white text-red-600 text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-sm"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => sectionInputRefs.current[section.id]?.click()}
+                    disabled={sectionUploading[section.id]}
+                    className="w-full h-28 flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-gray-300 text-gray-500 hover:border-gray-400 disabled:opacity-50"
+                  >
+                    {sectionUploading[section.id] ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>
+                        <ImagePlus className="w-5 h-5" />
+                        <span className="text-sm">Click to upload</span>
+                      </>
+                    )}
+                  </button>
+                )}
+                <input
+                  ref={(el) => {
+                    sectionInputRefs.current[section.id] = el;
+                  }}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleSectionImageChange(e, section.id)}
+                />
+                {sectionErrors[section.id] && (
+                  <div className="mt-2">
+                    <ErrorAlert message={sectionErrors[section.id] as string} light />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {activeForm.mapImageUrl && (
         <section className="card-light">

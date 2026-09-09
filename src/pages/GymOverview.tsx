@@ -65,7 +65,7 @@ export function GymOverview() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('sections')
-        .select('id, section_name, map_x, map_y, created_at')
+        .select('id, section_name, map_x, map_y, image_url, created_at')
         .eq('gym_id', id!);
       if (error) throw error;
       return data as Section[];

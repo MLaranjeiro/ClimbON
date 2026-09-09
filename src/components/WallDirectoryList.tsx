@@ -11,7 +11,7 @@ interface DirectoryRoute {
 }
 
 interface WallDirectoryListProps {
-  sections: { id: number; section_name: string }[];
+  sections: { id: number; section_name: string; image_url?: string | null }[];
   routes: DirectoryRoute[];
   onSelectSection: (sectionId: number | 'none') => void;
 }
@@ -25,11 +25,17 @@ interface WallEntry {
   thumbnail: string | null;
 }
 
-function buildEntry(id: number | 'none', name: string, sectionRoutes: DirectoryRoute[]): WallEntry {
+function buildEntry(
+  id: number | 'none',
+  name: string,
+  sectionRoutes: DirectoryRoute[],
+  sectionImage?: string | null,
+): WallEntry {
   const sortedGrades = [...sectionRoutes.map((r) => r.grade)].sort(compareGrades);
-  const thumbnail =
+  const routeThumbnail =
     [...sectionRoutes].sort((a, b) => b.created_at.localeCompare(a.created_at)).find((r) => r.image_url)
       ?.image_url ?? null;
+  const thumbnail = sectionImage ?? routeThumbnail;
 
   return {
     id,
@@ -47,6 +53,7 @@ export function WallDirectoryList({ sections, routes, onSelectSection }: WallDir
       s.id,
       s.section_name,
       routes.filter((r) => r.section_id === s.id),
+      s.image_url,
     ),
   );
 
