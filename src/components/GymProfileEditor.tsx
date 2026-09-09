@@ -113,6 +113,10 @@ export function GymProfileEditor({ gymId }: { gymId: number }) {
   const [sectionErrors, setSectionErrors] = useState<Record<number, string | null>>({});
   const sectionInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
+  const [newSectionName, setNewSectionName] = useState('');
+  const [addingSection, setAddingSection] = useState(false);
+  const [addSectionError, setAddSectionError] = useState<string | null>(null);
+
   const [placingRouteId, setPlacingRouteId] = useState<number | null>(null);
   const [placeError, setPlaceError] = useState<string | null>(null);
   const [routeWallFilter, setRouteWallFilter] = useState<number | null>(null);
@@ -213,6 +217,23 @@ export function GymProfileEditor({ gymId }: { gymId: number }) {
       logError('gym-profile.section-image-upload', err, { gymId, sectionId });
     }
     setSectionUploading((prev) => ({ ...prev, [sectionId]: false }));
+  }
+
+  async function handleAddSection(e: FormEvent) {
+    e.preventDefault();
+    const name = newSectionName.trim();
+    if (!name) return;
+    setAddingSection(true);
+    setAddSectionError(null);
+    const { error } = await supabase.from('sections').insert({ gym_id: gymId, section_name: name });
+    setAddingSection(false);
+    if (error) {
+      setAddSectionError(getErrorMessage(error));
+      logError('gym-profile.add-section', error, { gymId });
+      return;
+    }
+    setNewSectionName('');
+    await invalidateSectionQueries();
   }
 
   async function removeSectionImage(sectionId: number) {
@@ -534,12 +555,36 @@ export function GymProfileEditor({ gymId }: { gymId: number }) {
         </form>
       </section>
 
-      {(sections ?? []).length > 0 && (
-        <section className="card-light">
-          <h2 className="text-lg font-bold text-gray-900 mb-1">Wall images</h2>
-          <p className="text-sm text-gray-500 mb-4">
-            Add a photo for each wall — shown as its thumbnail in the wall picker.
-          </p>
+      <section className="card-light">
+        <h2 className="text-lg font-bold text-gray-900 mb-1">Walls</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Add a wall, then upload a photo for it — shown as its thumbnail in the wall picker.
+        </p>
+
+        <form onSubmit={handleAddSection} className="flex gap-2 mb-4">
+          <input
+            type="text"
+            className="input-field-light flex-1"
+            placeholder="Wall name, e.g. Overhang Cave"
+            value={newSectionName}
+            onChange={(e) => setNewSectionName(e.target.value)}
+          />
+          <button
+            type="submit"
+            className="btn-primary shrink-0 flex items-center gap-2"
+            disabled={addingSection || !newSectionName.trim()}
+          >
+            {addingSection && <Loader2 className="w-4 h-4 animate-spin" />}
+            Add wall
+          </button>
+        </form>
+        {addSectionError && (
+          <div className="mb-4">
+            <ErrorAlert message={addSectionError} light />
+          </div>
+        )}
+
+        {(sections ?? []).length > 0 && (
           <div className="grid sm:grid-cols-2 gap-4">
             {(sections ?? []).map((section) => (
               <div key={section.id}>
@@ -602,8 +647,8 @@ export function GymProfileEditor({ gymId }: { gymId: number }) {
               </div>
             ))}
           </div>
-        </section>
-      )}
+        )}
+      </section>
 
       {activeForm.mapImageUrl && (
         <section className="card-light">
