@@ -39,21 +39,6 @@ export interface GymMembership {
   gym?: Gym;
 }
 
-export type GymRoleRequestStatus = 'pending' | 'approved' | 'rejected';
-
-export interface GymRoleRequest {
-  id: number;
-  user_id: string;
-  gym_id: number;
-  requested_role: GymRole;
-  status: GymRoleRequestStatus;
-  requested_at: string;
-  decided_by: string | null;
-  decided_at: string | null;
-  gym?: Gym;
-  profile?: Pick<UserProfile, 'id' | 'username'>;
-}
-
 export interface Section {
   id: number;
   gym_id: number;
