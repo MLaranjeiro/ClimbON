@@ -1,0 +1,194 @@
+{
+  "info": {
+    "name": "ClimbON - Profile API (Milestone 1)",
+    "description": "API tests for F2 (User Profile Management) against Supabase's PostgREST + Auth endpoints. Run top to bottom in the Collection Runner — each request depends on variables set by the ones before it.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "SUPABASE_URL", "value": "", "description": "e.g. https://xxxxx.supabase.co (from .env.local VITE_SUPABASE_URL)" },
+    { "key": "ANON_KEY", "value": "", "description": "from .env.local VITE_SUPABASE_ANON_KEY" },
+    { "key": "TEST_EMAIL", "value": "", "description": "a real test account's email" },
+    { "key": "TEST_PASSWORD", "value": "", "description": "that test account's password" },
+    { "key": "access_token", "value": "" },
+    { "key": "user_id", "value": "" },
+    { "key": "original_bio", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Login (get access token)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "apikey", "value": "{{ANON_KEY}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": { "raw": "{{SUPABASE_URL}}/auth/v1/token?grant_type=password", "host": ["{{SUPABASE_URL}}"], "path": ["auth", "v1", "token"], "query": [{ "key": "grant_type", "value": "password" }] },
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{TEST_EMAIL}}\",\n  \"password\": \"{{TEST_PASSWORD}}\"\n}" }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('login succeeds with 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('response contains access_token', () => pm.expect(json.access_token).to.be.a('string'));",
+              "pm.collectionVariables.set('access_token', json.access_token);",
+              "pm.collectionVariables.set('user_id', json.user.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Get own profile",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "apikey", "value": "{{ANON_KEY}}" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": { "raw": "{{SUPABASE_URL}}/rest/v1/profiles?id=eq.{{user_id}}&select=*", "host": ["{{SUPABASE_URL}}"], "path": ["rest", "v1", "profiles"], "query": [{ "key": "id", "value": "eq.{{user_id}}" }, { "key": "select", "value": "*" }] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('returns exactly one profile row', () => pm.expect(json).to.have.lengthOf(1));",
+              "pm.test('profile has expected fields', () => {",
+              "  pm.expect(json[0]).to.have.property('username');",
+              "  pm.expect(json[0]).to.have.property('id', pm.collectionVariables.get('user_id'));",
+              "});",
+              "pm.collectionVariables.set('original_bio', json[0].profile_bio ?? '');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Update own profile bio",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "apikey", "value": "{{ANON_KEY}}" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}" },
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Prefer", "value": "return=representation" }
+        ],
+        "url": { "raw": "{{SUPABASE_URL}}/rest/v1/profiles?id=eq.{{user_id}}", "host": ["{{SUPABASE_URL}}"], "path": ["rest", "v1", "profiles"], "query": [{ "key": "id", "value": "eq.{{user_id}}" }] },
+        "body": { "mode": "raw", "raw": "{\n  \"profile_bio\": \"Updated via Postman API test\"\n}" }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 200 or 204', () => pm.expect([200, 204]).to.include(pm.response.code));",
+              "if (pm.response.code === 200) {",
+              "  const json = pm.response.json();",
+              "  pm.test('bio was updated', () => pm.expect(json[0].profile_bio).to.eql('Updated via Postman API test'));",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Verify update persisted",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "apikey", "value": "{{ANON_KEY}}" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": { "raw": "{{SUPABASE_URL}}/rest/v1/profiles?id=eq.{{user_id}}&select=profile_bio", "host": ["{{SUPABASE_URL}}"], "path": ["rest", "v1", "profiles"], "query": [{ "key": "id", "value": "eq.{{user_id}}" }, { "key": "select", "value": "profile_bio" }] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const json = pm.response.json();",
+              "pm.test('bio change is durable, not just echoed back', () => pm.expect(json[0].profile_bio).to.eql('Updated via Postman API test'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Restore original bio (cleanup)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "apikey", "value": "{{ANON_KEY}}" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": { "raw": "{{SUPABASE_URL}}/rest/v1/profiles?id=eq.{{user_id}}", "host": ["{{SUPABASE_URL}}"], "path": ["rest", "v1", "profiles"], "query": [{ "key": "id", "value": "eq.{{user_id}}" }] },
+        "body": { "mode": "raw", "raw": "{\n  \"profile_bio\": \"{{original_bio}}\"\n}" }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": { "exec": ["pm.test('cleanup succeeds', () => pm.expect([200, 204]).to.include(pm.response.code));"] }
+        }
+      ]
+    },
+    {
+      "name": "6. RLS check — no token is rejected",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "apikey", "value": "{{ANON_KEY}}" }
+        ],
+        "url": { "raw": "{{SUPABASE_URL}}/rest/v1/profiles?id=eq.{{user_id}}&select=*", "host": ["{{SUPABASE_URL}}"], "path": ["rest", "v1", "profiles"], "query": [{ "key": "id", "value": "eq.{{user_id}}" }, { "key": "select", "value": "*" }] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('unauthenticated request is blocked by RLS (empty result) or rejected outright', () => {",
+              "  if (pm.response.code === 200) {",
+              "    pm.expect(pm.response.json()).to.have.lengthOf(0);",
+              "  } else {",
+              "    pm.expect([401, 403]).to.include(pm.response.code);",
+              "  }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Injection probe — malicious id filter",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "apikey", "value": "{{ANON_KEY}}" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": { "raw": "{{SUPABASE_URL}}/rest/v1/profiles?id=eq.' OR '1'='1&select=*", "host": ["{{SUPABASE_URL}}"], "path": ["rest", "v1", "profiles"], "query": [{ "key": "id", "value": "eq.' OR '1'='1" }, { "key": "select", "value": "*" }] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('malformed/injection filter does not dump the whole table', () => {",
+              "  if (pm.response.code === 200) {",
+              "    pm.expect(pm.response.json().length).to.be.lessThan(2);",
+              "  } else {",
+              "    pm.expect(pm.response.code).to.be.oneOf([400, 406, 422]);",
+              "  }",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
