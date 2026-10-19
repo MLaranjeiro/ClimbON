@@ -25,16 +25,32 @@ test.describe('Login (F1.2)', () => {
     await expect(page).toHaveURL('/login');
   });
 
-  test('empty submit is blocked by required fields', async ({ page }) => {
+  test('empty submit shows an on-page error instead of a browser popup', async ({ page }) => {
     await page.goto('/login');
 
     await page.getByRole('button', { name: 'Login' }).click();
 
     await expect(page).toHaveURL('/login');
-    const emailValidationMessage = await page.getByPlaceholder('Email').evaluate(
-      (el: HTMLInputElement) => el.validationMessage,
-    );
-    expect(emailValidationMessage.length).toBeGreaterThan(0);
+    await expect(page.getByRole('alert')).toHaveText('Email and password are required.');
+  });
+
+  test('missing password names only the password field', async ({ page }) => {
+    await page.goto('/login');
+
+    await page.getByPlaceholder('Email').fill(TEST_EMAIL);
+    await page.getByRole('button', { name: 'Login' }).click();
+
+    await expect(page.getByRole('alert')).toHaveText('Password is required.');
+  });
+
+  test('malformed email shows an on-page error', async ({ page }) => {
+    await page.goto('/login');
+
+    await page.getByPlaceholder('Email').fill('not-an-email');
+    await page.getByPlaceholder('Password').fill('Password123!');
+    await page.getByRole('button', { name: 'Login' }).click();
+
+    await expect(page.getByRole('alert')).toHaveText('Enter a valid email address.');
   });
 
   test('Forgot Password link navigates to the reset flow', async ({ page }) => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validatePassword } from '../../lib/validation';
+import { isValidEmail, missingFieldsMessage, validatePassword } from '../../lib/validation';
 
 describe('validatePassword', () => {
   it('accepts a password meeting all complexity rules', () => {
@@ -44,5 +44,41 @@ describe('validatePassword', () => {
     const result = validatePassword('');
     expect(result.valid).toBe(false);
     expect(result.errors).toHaveLength(5);
+  });
+});
+
+describe('missingFieldsMessage', () => {
+  it('returns null when every field is filled in', () => {
+    expect(missingFieldsMessage({ Email: 'a@b.ca', Password: 'x' })).toBeNull();
+  });
+
+  it('names a single missing field', () => {
+    expect(missingFieldsMessage({ Email: 'a@b.ca', Password: '' })).toBe('Password is required.');
+  });
+
+  it('joins two missing fields with "and"', () => {
+    expect(missingFieldsMessage({ Email: '', Password: '' })).toBe('Email and password are required.');
+  });
+
+  it('lists three or more missing fields', () => {
+    expect(missingFieldsMessage({ Username: '', Email: '', Password: '' })).toBe(
+      'Username, email, and password are required.',
+    );
+  });
+
+  it('treats whitespace-only input as missing', () => {
+    expect(missingFieldsMessage({ Username: '   ' })).toBe('Username is required.');
+  });
+});
+
+describe('isValidEmail', () => {
+  it('accepts a normal email address', () => {
+    expect(isValidEmail('test@mohawk.ca')).toBe(true);
+  });
+
+  it('rejects addresses missing an @ or domain', () => {
+    expect(isValidEmail('not-an-email')).toBe(false);
+    expect(isValidEmail('test@mohawk')).toBe(false);
+    expect(isValidEmail('@mohawk.ca')).toBe(false);
   });
 });
