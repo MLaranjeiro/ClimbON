@@ -965,11 +965,12 @@
           "listen": "test",
           "script": {
             "exec": [
-              "pm.test('payload is treated as a literal value, not SQL', () => {",
+              "// 403 = rejected by the Supabase edge firewall before the query reaches Postgres.",
+              "pm.test('payload is treated as a literal value or blocked before reaching the database', () => {",
               "  if (pm.response.code === 200) {",
               "    pm.expect(pm.response.json()).to.have.lengthOf(0);",
               "  } else {",
-              "    pm.expect(pm.response.code).to.be.oneOf([400, 406, 422]);",
+              "    pm.expect(pm.response.code).to.be.oneOf([400, 403, 406, 422]);",
               "  }",
               "});",
               "pm.test('no database error details are leaked', () => pm.expect(pm.response.text()).to.not.match(/syntax error at or near/i));"
@@ -1023,13 +1024,15 @@
           "listen": "test",
           "script": {
             "exec": [
-              "pm.test('payload is treated as a literal value, not SQL', () => {",
+              "// 403 = rejected by the Supabase edge firewall before the query reaches Postgres.",
+              "pm.test('payload is treated as a literal value or blocked before reaching the database', () => {",
               "  if (pm.response.code === 200) {",
               "    pm.expect(pm.response.json()).to.have.lengthOf(0);",
               "  } else {",
-              "    pm.expect(pm.response.code).to.be.oneOf([400, 406, 422]);",
+              "    pm.expect(pm.response.code).to.be.oneOf([400, 403, 406, 422]);",
               "  }",
-              "});"
+              "});",
+              "pm.test('no database error details are leaked', () => pm.expect(pm.response.text()).to.not.match(/syntax error at or near/i));"
             ]
           }
         }
