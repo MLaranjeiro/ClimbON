@@ -13,7 +13,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // instead of treating the link as a normal login.
 export const PASSWORD_RECOVERY_FLAG = 'climbon:password-recovery';
 
-if (/(^|[#?&])type=recovery(&|$)/.test(window.location.hash + window.location.search)) {
+if (
+  typeof window !== 'undefined' &&
+  /(^|[#?&])type=recovery(&|$)/.test(window.location.hash + window.location.search)
+) {
   try {
     sessionStorage.setItem(PASSWORD_RECOVERY_FLAG, '1');
   } catch {
