@@ -66,7 +66,7 @@ export function RouteListView({ routes, sections, onSelectRoute }: RouteListView
           type="button"
           onClick={() => setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'))}
           className="btn-secondary-light text-sm py-1.5 px-3 flex items-center gap-1.5"
-          aria-label={`Sort direction: ${sortDirection === 'asc' ? 'ascending' : 'descending'}`}
+          aria-label={`Sort direction: ${sortDirection === 'asc' ? 'Low to high' : 'High to low'}`}
         >
           {sortDirection === 'asc' ? (
             <ArrowUpNarrowWide className="w-4 h-4" aria-hidden="true" />
