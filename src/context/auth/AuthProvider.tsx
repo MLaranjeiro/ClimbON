@@ -34,6 +34,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [gymMemberships, setGymMemberships] = useState<GymMembership[]>([]);
   const [homeGym, setHomeGymState] = useState<HomeGymSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  // Id of the user whose profile and gym roles have finished loading. The session
+  // resolves first, so role checks must wait until this catches up — otherwise a setter
+  // opening /admin directly is redirected before their memberships arrive.
+  const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
 
   async function loadProfile(userId: string) {
     const [{ data: profileData }, { data: membershipData }] = await Promise.all([
@@ -48,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(row as UserProfile | null);
     setHomeGymState(row?.home_gym ?? null);
     setGymMemberships((membershipData as GymMembership[] | null) ?? []);
+    setLoadedUserId(userId);
   }
 
   useEffect(() => {
@@ -61,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setPasswordRecovery(false);
         setProfile(null);
         setGymMemberships([]);
+        setLoadedUserId(null);
       }
     });
 
@@ -73,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setProfile(null);
         setGymMemberships([]);
+        setLoadedUserId(null);
       }
     });
 
@@ -105,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         gymMemberships,
         homeGym,
         loading,
+        profileLoading: session != null && loadedUserId !== session.user.id,
         passwordRecovery,
         signOut,
         refreshProfile,

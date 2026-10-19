@@ -13,11 +13,12 @@ export function ProtectedRoute({
   requireGymRole?: boolean;
   requirePlatformAdmin?: boolean;
 }) {
-  const { session, profile, gymMemberships, loading, passwordRecovery } = useAuth();
+  const { session, profile, gymMemberships, loading, profileLoading, passwordRecovery } = useAuth();
 
   if (loading) return <p className="text-gray-400">Loading…</p>;
   if (!session) return <Navigate to="/login" replace />;
   if (passwordRecovery) return <Navigate to="/reset-password" replace />;
+  if (profileLoading && (requireGymRole || requirePlatformAdmin)) return <p className="text-gray-400">Loading…</p>;
   if (profile && !profile.username_confirmed) return <Navigate to="/welcome" replace />;
   if (requireGymRole && !hasAnyGymRole(gymMemberships) && !profile?.is_platform_admin) {
     return <Navigate to={getHomeRoute()} replace />;

@@ -15,6 +15,8 @@ export interface AuthContextValue {
   gymMemberships: GymMembership[];
   homeGym: HomeGymSummary | null;
   loading: boolean;
+  // True while a signed-in user's profile and gym roles are still being fetched.
+  profileLoading: boolean;
   // True while the session came from a password-reset link and the new password
   // hasn't been set yet — such a session may only use /reset-password.
   passwordRecovery: boolean;
