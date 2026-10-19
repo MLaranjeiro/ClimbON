@@ -20,10 +20,10 @@ async function expectNoViolations(page: Page) {
 }
 
 test.describe('Accessibility — public pages', () => {
-  for (const path of ['/login', '/register', '/forgot-password']) {
+  for (const path of ['/login', '/register', '/forgot-password', '/reset-password']) {
     test(`${path} has no WCAG 2.1 AA violations`, async ({ page }) => {
       await page.goto(path);
-      await expect(page.getByRole('button').first()).toBeVisible();
+      await expect(page.getByRole('link').first()).toBeVisible();
       await expectNoViolations(page);
     });
   }
