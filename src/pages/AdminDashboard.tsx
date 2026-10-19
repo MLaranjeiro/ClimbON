@@ -292,6 +292,10 @@ export function AdminDashboard() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!form.routeName.trim()) {
+      setFormError('Enter a route name.');
+      return;
+    }
     if (!form.gymId) {
       setFormError('Select a gym.');
       return;
@@ -417,6 +421,7 @@ export function AdminDashboard() {
           <button
             type="button"
             onClick={() => setTab('routes')}
+            aria-pressed={effectiveTab === 'routes'}
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
               effectiveTab === 'routes' ? 'border-brand-600 text-brand-600' : 'border-transparent text-gray-500 hover:text-gray-900'
             }`}
@@ -426,6 +431,7 @@ export function AdminDashboard() {
           <button
             type="button"
             onClick={() => setTab('team')}
+            aria-pressed={effectiveTab === 'team'}
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
               effectiveTab === 'team' ? 'border-brand-600 text-brand-600' : 'border-transparent text-gray-500 hover:text-gray-900'
             }`}
@@ -447,132 +453,134 @@ export function AdminDashboard() {
           ) : !routes || routes.length === 0 ? (
             <p className="text-gray-500 text-sm p-5">No routes yet. Add your first route to get started.</p>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 text-left text-gray-500">
-                  <th className="px-5 py-3 font-medium">Route</th>
-                  <th className="px-5 py-3 font-medium">Gym</th>
-                  <th className="px-5 py-3 font-medium">
-                    <button
-                      type="button"
-                      onClick={() => toggleSort('section')}
-                      className="flex items-center gap-1 hover:text-gray-900"
-                    >
-                      Section
-                      {sortColumn === 'section' ? (
-                        sortDirection === 'asc' ? (
-                          <ChevronUp className="w-3.5 h-3.5" />
-                        ) : (
-                          <ChevronDown className="w-3.5 h-3.5" />
-                        )
-                      ) : (
-                        <ChevronsUpDown className="w-3.5 h-3.5 text-gray-300" />
-                      )}
-                    </button>
-                  </th>
-                  <th className="px-5 py-3 font-medium">
-                    <button
-                      type="button"
-                      onClick={() => toggleSort('grade')}
-                      className="flex items-center gap-1 hover:text-gray-900"
-                    >
-                      Grade
-                      {sortColumn === 'grade' ? (
-                        sortDirection === 'asc' ? (
-                          <ChevronUp className="w-3.5 h-3.5" />
-                        ) : (
-                          <ChevronDown className="w-3.5 h-3.5" />
-                        )
-                      ) : (
-                        <ChevronsUpDown className="w-3.5 h-3.5 text-gray-300" />
-                      )}
-                    </button>
-                  </th>
-                  <th className="px-5 py-3 font-medium">
-                    <button
-                      type="button"
-                      onClick={() => toggleSort('status')}
-                      className="flex items-center gap-1 hover:text-gray-900"
-                    >
-                      Status
-                      {sortColumn === 'status' ? (
-                        sortDirection === 'asc' ? (
-                          <ChevronUp className="w-3.5 h-3.5" />
-                        ) : (
-                          <ChevronDown className="w-3.5 h-3.5" />
-                        )
-                      ) : (
-                        <ChevronsUpDown className="w-3.5 h-3.5 text-gray-300" />
-                      )}
-                    </button>
-                  </th>
-                  <th className="px-5 py-3 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {sortedRoutes.map((route) => (
-                  <tr key={route.id}>
-                    <td className="px-5 py-3 font-medium text-gray-900">{route.route_name}</td>
-                    <td className="px-5 py-3 text-gray-600">{route.gym?.gym_name ?? '—'}</td>
-                    <td className="px-5 py-3 text-gray-600">{route.section?.section_name ?? '—'}</td>
-                    <td className="px-5 py-3">
-                      <span className={`badge ${getGradeBadgeClasses(route.grade)}`}>{route.grade}</span>
-                    </td>
-                    <td className="px-5 py-3">
-                      <span
-                        className={`badge ${
-                          route.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                        }`}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[640px]">
+                <thead>
+                  <tr className="border-b border-gray-200 text-left text-gray-500">
+                    <th className="px-5 py-3 font-medium">Route</th>
+                    <th className="px-5 py-3 font-medium">Gym</th>
+                    <th className="px-5 py-3 font-medium">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort('section')}
+                        className="flex items-center gap-1 hover:text-gray-900"
                       >
-                        {route.status === 'active' ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center justify-end gap-3">
-                        <button
-                          type="button"
-                          onClick={() => openEdit(route)}
-                          className="text-gray-500 hover:text-brand-600"
-                          aria-label="Edit route"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => toggleStatus(route)}
-                          disabled={statusUpdatingId === route.id}
-                          className="text-gray-500 hover:text-red-600 disabled:opacity-50"
-                          title={route.status === 'active' ? 'Deactivate route' : 'Activate route'}
-                          aria-label={route.status === 'active' ? 'Deactivate route' : 'Activate route'}
-                        >
-                          {statusUpdatingId === route.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : route.status === 'active' ? (
-                            <XCircle className="w-4 h-4" />
+                        Section
+                        {sortColumn === 'section' ? (
+                          sortDirection === 'asc' ? (
+                            <ChevronUp className="w-3.5 h-3.5" />
                           ) : (
-                            <CheckCircle className="w-4 h-4" />
-                          )}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => deleteRoute(route)}
-                          disabled={deletingId === route.id}
-                          className="text-gray-500 hover:text-red-600 disabled:opacity-50"
-                          title="Delete route"
-                          aria-label="Delete route"
-                        >
-                          {deletingId === route.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          )
+                        ) : (
+                          <ChevronsUpDown className="w-3.5 h-3.5 text-gray-300" />
+                        )}
+                      </button>
+                    </th>
+                    <th className="px-5 py-3 font-medium">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort('grade')}
+                        className="flex items-center gap-1 hover:text-gray-900"
+                      >
+                        Grade
+                        {sortColumn === 'grade' ? (
+                          sortDirection === 'asc' ? (
+                            <ChevronUp className="w-3.5 h-3.5" />
                           ) : (
-                            <Trash2 className="w-4 h-4" />
-                          )}
-                        </button>
-                      </div>
-                    </td>
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          )
+                        ) : (
+                          <ChevronsUpDown className="w-3.5 h-3.5 text-gray-300" />
+                        )}
+                      </button>
+                    </th>
+                    <th className="px-5 py-3 font-medium">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort('status')}
+                        className="flex items-center gap-1 hover:text-gray-900"
+                      >
+                        Status
+                        {sortColumn === 'status' ? (
+                          sortDirection === 'asc' ? (
+                            <ChevronUp className="w-3.5 h-3.5" />
+                          ) : (
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          )
+                        ) : (
+                          <ChevronsUpDown className="w-3.5 h-3.5 text-gray-300" />
+                        )}
+                      </button>
+                    </th>
+                    <th className="px-5 py-3 font-medium text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {sortedRoutes.map((route) => (
+                    <tr key={route.id}>
+                      <td className="px-5 py-3 font-medium text-gray-900">{route.route_name}</td>
+                      <td className="px-5 py-3 text-gray-600">{route.gym?.gym_name ?? '—'}</td>
+                      <td className="px-5 py-3 text-gray-600">{route.section?.section_name ?? '—'}</td>
+                      <td className="px-5 py-3">
+                        <span className={`badge ${getGradeBadgeClasses(route.grade)}`}>{route.grade}</span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <span
+                          className={`badge ${
+                            route.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                          }`}
+                        >
+                          {route.status === 'active' ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <div className="flex items-center justify-end gap-3">
+                          <button
+                            type="button"
+                            onClick={() => openEdit(route)}
+                            className="text-gray-500 hover:text-brand-600"
+                            aria-label="Edit route"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleStatus(route)}
+                            disabled={statusUpdatingId === route.id}
+                            className="text-gray-500 hover:text-red-600 disabled:opacity-50"
+                            title={route.status === 'active' ? 'Deactivate route' : 'Activate route'}
+                            aria-label={route.status === 'active' ? 'Deactivate route' : 'Activate route'}
+                          >
+                            {statusUpdatingId === route.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : route.status === 'active' ? (
+                              <XCircle className="w-4 h-4" />
+                            ) : (
+                              <CheckCircle className="w-4 h-4" />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteRoute(route)}
+                            disabled={deletingId === route.id}
+                            className="text-gray-500 hover:text-red-600 disabled:opacity-50"
+                            title="Delete route"
+                            aria-label="Delete route"
+                          >
+                            {deletingId === route.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </section>
       )}
@@ -583,6 +591,7 @@ export function AdminDashboard() {
           <input
             className="input-field-light"
             placeholder="Search by username or email"
+            aria-label="Search users by username or email"
             value={memberSearch}
             onChange={(e) => setMemberSearch(e.target.value)}
           />
@@ -644,59 +653,66 @@ export function AdminDashboard() {
           ) : !team || team.length === 0 ? (
             <p className="text-gray-500 text-sm p-5">No team members yet.</p>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 text-left text-gray-500">
-                  <th className="px-5 py-3 font-medium">Member</th>
-                  <th className="px-5 py-3 font-medium">Role</th>
-                  <th className="px-5 py-3 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {team.map((member) => (
-                  <tr key={member.id}>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-3">
-                        <Avatar src={member.profile?.avatar_url} name={member.profile?.username} size={32} />
-                        <div>
-                          <p className="font-medium text-gray-900">{member.profile?.username ?? 'Unknown user'}</p>
-                          <p className="text-xs text-gray-500">{member.profile?.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3">
-                      <span
-                        className={`badge ${
-                          member.role === 'gym_admin' ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700'
-                        }`}
-                      >
-                        {member.role === 'gym_admin' ? 'Gym Admin' : 'Route Setter'}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      <button
-                        type="button"
-                        onClick={() => revokeMember(member)}
-                        disabled={revokingId === member.id}
-                        className="text-gray-500 hover:text-red-600 disabled:opacity-50 text-sm font-medium"
-                      >
-                        {revokingId === member.id ? 'Revoking…' : 'Revoke'}
-                      </button>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[480px]">
+                <thead>
+                  <tr className="border-b border-gray-200 text-left text-gray-500">
+                    <th className="px-5 py-3 font-medium">Member</th>
+                    <th className="px-5 py-3 font-medium">Role</th>
+                    <th className="px-5 py-3 font-medium text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {team.map((member) => (
+                    <tr key={member.id}>
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-3">
+                          <Avatar src={member.profile?.avatar_url} name={member.profile?.username} size={32} />
+                          <div>
+                            <p className="font-medium text-gray-900">{member.profile?.username ?? 'Unknown user'}</p>
+                            <p className="text-xs text-gray-500">{member.profile?.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3">
+                        <span
+                          className={`badge ${
+                            member.role === 'gym_admin' ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700'
+                          }`}
+                        >
+                          {member.role === 'gym_admin' ? 'Gym Admin' : 'Route Setter'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => revokeMember(member)}
+                          disabled={revokingId === member.id}
+                          className="text-gray-500 hover:text-red-600 disabled:opacity-50 text-sm font-medium"
+                        >
+                          {revokingId === member.id ? 'Revoking…' : 'Revoke'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </section>
       )}
 
       {formTarget && (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 px-4 py-10">
-          <div className="w-full max-w-lg rounded-xl bg-white shadow-xl">
+          <div
+            className="w-full max-w-lg rounded-xl bg-white shadow-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="route-form-title"
+          >
             <div className="flex items-start justify-between gap-4 border-b border-gray-200 px-6 py-5">
               <div>
-                <h2 className="text-lg font-bold text-gray-900">{isCreating ? 'Add New Route' : 'Edit Route'}</h2>
+                <h2 id="route-form-title" className="text-lg font-bold text-gray-900">{isCreating ? 'Add New Route' : 'Edit Route'}</h2>
                 <p className="text-sm text-gray-500 mt-0.5">
                   {isCreating
                     ? 'Fill in the details below to add a new climbing route.'
@@ -832,6 +848,7 @@ export function AdminDashboard() {
                               : [...f.styles, style],
                           }))
                         }
+                        aria-pressed={active}
                         className={`badge cursor-pointer ${active ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-600'}`}
                       >
                         {style}
