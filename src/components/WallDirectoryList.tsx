@@ -78,7 +78,7 @@ export function WallDirectoryList({ sections, routes, onSelectSection }: WallDir
           {entry.thumbnail ? (
             <img src={entry.thumbnail} alt="" className="absolute inset-0 w-full h-full object-cover" />
           ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-gray-300 to-gray-400" />
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-500 to-gray-600" />
           )}
 
           <div className="absolute inset-0 bg-black/20 transition-colors duration-200 group-hover:bg-black/35" />

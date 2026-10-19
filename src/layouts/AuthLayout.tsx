@@ -46,7 +46,7 @@ export function AuthLayout() {
                 <Link
                   to="/login"
                   className={`rounded-full font-semibold text-sm px-6 py-2 transition-colors ${
-                    isLogin ? 'bg-white text-brand-700 shadow-sm' : 'text-gray-500 hover:text-gray-900'
+                    isLogin ? 'bg-white text-brand-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
                   Login
@@ -54,7 +54,7 @@ export function AuthLayout() {
                 <Link
                   to="/register"
                   className={`rounded-full font-semibold text-sm px-6 py-2 transition-colors ${
-                    isRegister ? 'bg-white text-brand-700 shadow-sm' : 'text-gray-500 hover:text-gray-900'
+                    isRegister ? 'bg-white text-brand-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
                   Sign Up

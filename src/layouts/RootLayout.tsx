@@ -34,7 +34,7 @@ export function RootLayout() {
             <span className="text-lg font-semibold text-white">ClimbON</span>
           </Link>
 
-          <nav className="flex items-center gap-1">
+          <nav className="flex items-center gap-1" aria-label="Main">
             <NavLink
               to="/"
               end
@@ -71,9 +71,10 @@ export function RootLayout() {
             <button
               type="button"
               title="Notifications (coming soon)"
+              aria-label="Notifications (coming soon)"
               className="p-2 rounded-full text-gray-300 hover:bg-white/10 hover:text-white"
             >
-              <Bell className="w-5 h-5" />
+              <Bell className="w-5 h-5" aria-hidden="true" />
             </button>
             <AppUserMenu />
           </div>

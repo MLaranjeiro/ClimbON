@@ -66,7 +66,9 @@ export function GymPicker() {
           <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             className="w-full bg-white border border-gray-300 text-gray-900 placeholder-gray-400 rounded-full pl-10 pr-4 py-2.5 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-shadow duration-200"
+            type="search"
             placeholder="Search"
+            aria-label="Search gyms by name or location"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -82,46 +84,53 @@ export function GymPicker() {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
           {matches.map((gym) => (
-            <Link
+            // The favourite button sits beside the card link rather than inside it — a button
+            // nested in a link is ambiguous to screen readers and keyboard users.
+            <div
               key={gym.id}
-              to={`/gyms/${gym.slug}`}
               className="group relative h-[145px] sm:h-[220px] overflow-hidden rounded-2xl bg-gray-300 text-white"
             >
-              {gym.cover_image_url ? (
-                <img src={gym.cover_image_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
-              ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-gray-300 to-gray-400" />
-              )}
+              <Link to={`/gyms/${gym.slug}`} className="absolute inset-0">
+                {gym.cover_image_url ? (
+                  <img src={gym.cover_image_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-gray-500 to-gray-600" />
+                )}
 
-              <div className="absolute inset-0 bg-black/20 transition-colors duration-200 group-hover:bg-black/35" />
+                <div className="absolute inset-0 bg-black/20 transition-colors duration-200 group-hover:bg-black/35" />
+
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-2 text-center">
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full overflow-hidden bg-white shrink-0 flex items-center justify-center shadow-sm">
+                    {gym.logo_url ? (
+                      <img src={gym.logo_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <Mountain className="w-3.5 h-3.5 text-gray-400" aria-hidden="true" />
+                    )}
+                  </div>
+                  <h2 className="text-base sm:text-2xl font-semibold leading-tight drop-shadow-sm">{gym.gym_name}</h2>
+                  {gym.city && (
+                    <p className="text-xs sm:text-lg sm:font-medium text-white/90 drop-shadow-sm">{gym.city}</p>
+                  )}
+                </div>
+              </Link>
 
               <button
                 type="button"
                 onClick={(e) => handleToggleFavorite(e, gym.id)}
                 disabled={favoriting === gym.id}
                 title={homeGym?.id === gym.id ? 'Remove as home gym' : 'Set as home gym'}
-                aria-label={homeGym?.id === gym.id ? 'Remove as home gym' : 'Set as home gym'}
+                aria-label={`Home gym: ${gym.gym_name}`}
+                aria-pressed={homeGym?.id === gym.id}
                 className="absolute top-2 right-2 z-10 w-7 h-7 rounded-full bg-black/30 hover:bg-black/50 flex items-center justify-center transition-colors disabled:opacity-50"
               >
                 <Star
                   className={`w-3.5 h-3.5 ${
                     homeGym?.id === gym.id ? 'fill-amber-400 text-amber-400' : 'text-white'
                   }`}
+                  aria-hidden="true"
                 />
               </button>
-
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-2 text-center">
-                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full overflow-hidden bg-white shrink-0 flex items-center justify-center shadow-sm">
-                  {gym.logo_url ? (
-                    <img src={gym.logo_url} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <Mountain className="w-3.5 h-3.5 text-gray-400" />
-                  )}
-                </div>
-                <h2 className="text-base sm:text-2xl font-semibold leading-tight drop-shadow-sm">{gym.gym_name}</h2>
-                {gym.city && <p className="text-xs sm:text-lg sm:font-medium text-white/90 drop-shadow-sm">{gym.city}</p>}
-              </div>
-            </Link>
+            </div>
           ))}
         </div>
       )}

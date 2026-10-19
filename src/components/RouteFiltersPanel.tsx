@@ -27,7 +27,12 @@ export function RouteFiltersPanel({
   matchCount,
 }: RouteFiltersPanelProps) {
   return (
-    <div className="absolute right-0 mt-2 w-72 rounded-xl border border-gray-200 bg-white shadow-lg z-20 p-4">
+    <div
+      id="route-filters-panel"
+      role="region"
+      aria-label="Route filters"
+      className="absolute right-0 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-xl border border-gray-200 bg-white shadow-lg z-20 p-4"
+    >
       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Grades</p>
       <div className="flex flex-wrap gap-2">
         {GRADE_ORDER.map((grade) => {
@@ -37,6 +42,7 @@ export function RouteFiltersPanel({
               key={grade}
               type="button"
               onClick={() => onToggleGrade(grade)}
+              aria-pressed={active}
               className={`badge cursor-pointer ${active ? getGradeBadgeClasses(grade) : 'bg-gray-100 text-gray-600'}`}
             >
               {grade}
@@ -56,6 +62,7 @@ export function RouteFiltersPanel({
                   key={wall.id}
                   type="button"
                   onClick={() => onToggleSection(wall.id)}
+                  aria-pressed={active}
                   className={`w-full flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm text-left transition-colors ${
                     active ? 'bg-brand-50 text-brand-700' : 'text-gray-700 hover:bg-gray-50'
                   }`}
@@ -75,7 +82,7 @@ export function RouteFiltersPanel({
         <button type="button" onClick={onReset} className="text-sm font-medium text-gray-500 hover:text-red-600">
           Reset
         </button>
-        <span className="text-xs text-gray-400">
+        <span className="text-xs text-gray-500" aria-live="polite">
           {matchCount} climb{matchCount === 1 ? '' : 's'} match
         </span>
       </div>

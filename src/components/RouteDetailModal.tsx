@@ -101,6 +101,9 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 sm:py-10" onClick={onClose}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Route details"
         className={`w-full max-h-full flex flex-col overflow-hidden rounded-xl bg-white shadow-xl transition-[max-width] ${view === 'log' ? 'max-w-md' : 'max-w-2xl'}`}
         onClick={(e) => e.stopPropagation()}
       >
@@ -110,6 +113,7 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
                 <button
                   type="button"
                   onClick={() => setView('detail')}
+                  aria-label="Back to route details"
                   className="shrink-0 p-1.5 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -125,6 +129,7 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
                       <button
                         type="button"
                         onClick={() => goTo(currentIndex - 1)}
+                        aria-label="Previous climb"
                         disabled={currentIndex === 0}
                         className="p-1 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 disabled:hover:bg-transparent shrink-0"
                       >
@@ -149,12 +154,13 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
                       <button
                         type="button"
                         onClick={() => goTo(currentIndex + 1)}
+                        aria-label="Next climb"
                         disabled={currentIndex === sortedSiblings.length - 1}
                         className="p-1 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-30 disabled:hover:bg-transparent shrink-0"
                       >
                         <ChevronRight className="w-4 h-4" />
                       </button>
-                      <span className="text-xs text-gray-400 shrink-0">
+                      <span className="text-xs text-gray-500 shrink-0">
                         {currentIndex + 1} / {sortedSiblings.length}
                       </span>
                     </>
@@ -165,6 +171,7 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
             <button
               type="button"
               onClick={onClose}
+              aria-label="Close"
               className="shrink-0 p-1.5 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700"
             >
               <X className="w-4 h-4" />
@@ -173,7 +180,7 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
 
           {view === 'detail' && hasSiblings && (
             <div className="shrink-0 flex items-center gap-3 px-4 py-2 border-b border-gray-100 text-xs">
-              <span className="text-gray-400 font-medium shrink-0">Sort:</span>
+              <span className="text-gray-500 font-medium shrink-0">Sort:</span>
               {(
                 [
                   ['grade', 'Grade'],
@@ -222,7 +229,7 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
                     <span className={`badge ${getGradeBadgeClasses(route.grade)}`}>{route.grade}</span>
                     <h2 className="text-lg font-bold text-gray-900 truncate">{route.route_name}</h2>
                     {route.section && (
-                      <span className="text-sm text-gray-400 shrink-0">on {route.section.section_name}</span>
+                      <span className="text-sm text-gray-500 shrink-0">on {route.section.section_name}</span>
                     )}
                     {isLogged && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 text-xs font-semibold shrink-0">

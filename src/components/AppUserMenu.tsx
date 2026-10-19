@@ -31,6 +31,8 @@ export function AppUserMenu() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-haspopup="menu"
         className="flex items-center gap-2 rounded-full px-2 py-1.5 text-sm text-gray-300 hover:bg-white/10 hover:text-white"
       >
         <Avatar src={profile?.avatar_url} name={profile?.username} size={22} />

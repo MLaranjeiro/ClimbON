@@ -74,7 +74,9 @@ export function SectionClimbsContent({ gymId, sectionId, onSelectRoute }: Sectio
         <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
         <input
           className="input-field-light pl-9"
+          type="search"
           placeholder="Search climbs"
+          aria-label="Search climbs in this section"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />

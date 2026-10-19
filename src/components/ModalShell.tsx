@@ -26,16 +26,23 @@ export function ModalShell({ title, onClose, children, maxWidthClass = 'max-w-2x
   return createPortal(
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40" onClick={onClose}>
       <div className="flex min-h-full items-center justify-center px-4 py-10">
-        <div className={`w-full ${maxWidthClass} rounded-xl bg-white shadow-xl`} onClick={stop}>
+        <div
+          className={`w-full ${maxWidthClass} rounded-xl bg-white shadow-xl`}
+          onClick={stop}
+          role="dialog"
+          aria-modal="true"
+          aria-label={title}
+        >
           <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-3">
             {title && <h2 className="text-lg font-bold text-gray-900">{title}</h2>}
             {headerExtra}
             <button
               type="button"
               onClick={onClose}
-              className="ml-auto p-1.5 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+              className="ml-auto p-1.5 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+              aria-label="Close"
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>
           <div className="p-5">{children}</div>

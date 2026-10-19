@@ -108,7 +108,7 @@ export function Login() {
         </button>
       </form>
 
-      <div className="flex items-center gap-3 mt-8 text-xs font-medium text-gray-400">
+      <div className="flex items-center gap-3 mt-8 text-xs font-medium text-gray-500">
         <div className="h-px flex-1 bg-gray-200" />
         <span>OR</span>
         <div className="h-px flex-1 bg-gray-200" />
