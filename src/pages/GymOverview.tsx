@@ -377,14 +377,22 @@ export function GymOverview() {
         ) : view === 'list' ? (
           matchingRoutes.length === 0 ? (
             <p className="text-gray-500 text-sm">
-              {q ? `No climbs match "${query}".` : 'No climbs match the selected filters.'}
+              {q
+                ? `No climbs match "${query}".`
+                : activeFilterCount > 0
+                  ? 'No climbs match the selected filters.'
+                  : 'No climbs at this gym yet.'}
             </p>
           ) : (
             <RouteListView routes={matchingRoutes} sections={sectionList} onSelectRoute={openFromList} />
           )
         ) : filteredSections.length === 0 && !includeUnsectioned ? (
           <p className="text-gray-500 text-sm">
-            {q ? `No climbs or walls match "${query}".` : 'No climbs match the selected filters.'}
+            {q
+              ? `No climbs or walls match "${query}".`
+              : activeFilterCount > 0
+                ? 'No climbs match the selected filters.'
+                : 'No walls or climbs at this gym yet.'}
           </p>
         ) : (
           <WallDirectoryList sections={filteredSections} routes={directoryRoutes} onSelectSection={openSection} />

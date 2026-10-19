@@ -112,7 +112,7 @@ function formatRelativeDate(dateStr: string): string {
 }
 
 function getStatValueClass(value: string | number, muted?: boolean): string {
-  if (muted) return 'text-sm font-semibold text-gray-400 truncate';
+  if (muted) return 'text-sm font-semibold text-gray-500 truncate';
   const length = String(value).length;
   if (length > 14) return 'text-lg font-extrabold tracking-tight text-gray-900 truncate';
   if (length > 10) return 'text-2xl font-extrabold tracking-tight text-gray-900 truncate';
@@ -313,7 +313,7 @@ export function Dashboard() {
 
             <Link
               to={homeGym ? `/gyms/${homeGym.slug}` : '/gyms'}
-              className="inline-flex items-center justify-center gap-2 rounded-full shrink-0 bg-brand-500 text-white font-bold py-2.5 px-5 shadow-sm shadow-brand-900/30 hover:bg-brand-600 transition-colors duration-200"
+              className="inline-flex items-center justify-center gap-2 rounded-full shrink-0 bg-brand-600 text-white font-bold py-2.5 px-5 shadow-sm shadow-brand-900/30 hover:bg-brand-700 transition-colors duration-200"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Log a Send</span>
@@ -336,7 +336,7 @@ export function Dashboard() {
               >
                 {value}
               </div>
-              {caption && <p className="text-xs text-gray-400 mt-0.5 truncate">{caption}</p>}
+              {caption && <p className="text-xs text-gray-600 mt-0.5 truncate">{caption}</p>}
             </div>
           ))}
         </div>
@@ -428,7 +428,7 @@ export function Dashboard() {
                   <Video className="w-5 h-5 text-gray-400" />
                 </div>
                 <p className="text-sm font-medium text-gray-700">No beta uploaded yet</p>
-                <p className="text-xs text-gray-400 max-w-xs">
+                <p className="text-xs text-gray-500 max-w-xs">
                   Share a video or write-up from any route page to help other climbers send it.
                 </p>
               </div>
@@ -526,7 +526,7 @@ export function Dashboard() {
                           {send.route.grade}
                         </span>
                       ) : (
-                        <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0 text-xs text-gray-400">
+                        <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0 text-xs text-gray-600">
                           —
                         </div>
                       )}
@@ -549,7 +549,7 @@ export function Dashboard() {
                         </div>
                       </div>
                       <div className="ml-auto flex flex-col items-end gap-1 shrink-0 text-right">
-                        <span className="text-xs text-gray-400">{formatRelativeDate(send.date_completed)}</span>
+                        <span className="text-xs text-gray-500">{formatRelativeDate(send.date_completed)}</span>
                         {send.route?.gym?.gym_name && (
                           <span className="flex items-center gap-1 text-xs text-gray-500">
                             <MapPin className="w-3 h-3 shrink-0" />
@@ -595,7 +595,7 @@ export function Dashboard() {
                 <Target className="w-5 h-5 text-brand-600" />
               </div>
               <p className="text-sm font-medium text-gray-700">Goal tracking is coming soon</p>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-gray-500 mt-1">
                 Set monthly grade targets and watch your progress bar fill in as you send.
               </p>
             </div>
