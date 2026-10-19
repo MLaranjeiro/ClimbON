@@ -15,6 +15,9 @@ export interface AuthContextValue {
   gymMemberships: GymMembership[];
   homeGym: HomeGymSummary | null;
   loading: boolean;
+  // True while the session came from a password-reset link and the new password
+  // hasn't been set yet — such a session may only use /reset-password.
+  passwordRecovery: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   setHomeGym: (gymId: number | null) => Promise<void>;

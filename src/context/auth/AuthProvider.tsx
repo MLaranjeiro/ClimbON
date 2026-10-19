@@ -1,10 +1,34 @@
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState, type ReactNode } from 'react';
-import { supabase } from '../../lib/supabase';
+import { PASSWORD_RECOVERY_FLAG, supabase } from '../../lib/supabase';
 import type { GymMembership, UserProfile } from '../../types';
 import { AuthContext, type HomeGymSummary } from './context';
 
+function readRecoveryFlag() {
+  try {
+    return sessionStorage.getItem(PASSWORD_RECOVERY_FLAG) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeRecoveryFlag(active: boolean) {
+  try {
+    if (active) sessionStorage.setItem(PASSWORD_RECOVERY_FLAG, '1');
+    else sessionStorage.removeItem(PASSWORD_RECOVERY_FLAG);
+  } catch {
+    // Storage blocked — the in-memory state still applies for this page load.
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const [passwordRecovery, setPasswordRecoveryState] = useState(readRecoveryFlag);
+
+  function setPasswordRecovery(active: boolean) {
+    writeRecoveryFlag(active);
+    setPasswordRecoveryState(active);
+  }
+
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [gymMemberships, setGymMemberships] = useState<GymMembership[]>([]);
@@ -33,12 +57,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data.session?.user) {
         loadProfile(data.session.user.id);
       } else {
+        // An expired or already-used reset link leaves the flag behind with no session.
+        setPasswordRecovery(false);
         setProfile(null);
         setGymMemberships([]);
       }
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, newSession) => {
+      if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
+      if (event === 'SIGNED_OUT') setPasswordRecovery(false);
       setSession(newSession);
       if (newSession?.user) {
         loadProfile(newSession.user.id);
@@ -77,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         gymMemberships,
         homeGym,
         loading,
+        passwordRecovery,
         signOut,
         refreshProfile,
         setHomeGym,

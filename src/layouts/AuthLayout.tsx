@@ -1,18 +1,28 @@
-import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import authHero from '../assets/auth-hero.webp';
 import icon from '../assets/climbon-icon.png';
 import { useAuth } from '../context/auth';
 import { getHomeRoute } from '../lib/getHomeRoute';
 
 export function AuthLayout() {
-  const { session, loading } = useAuth();
+  const { session, loading, passwordRecovery, signOut } = useAuth();
   const location = useLocation();
-
-  if (loading) return null;
-  if (session) return <Navigate to={getHomeRoute()} replace />;
+  const navigate = useNavigate();
 
   const isLogin = location.pathname === '/login';
   const isRegister = location.pathname === '/register';
+  const isReset = location.pathname === '/reset-password';
+
+  if (loading) return null;
+  // A reset-link session is only good for choosing a new password; any other signed-in
+  // visit to these pages goes straight to the app.
+  if (session && passwordRecovery && !isReset) return <Navigate to="/reset-password" replace />;
+  if (session && !passwordRecovery) return <Navigate to={getHomeRoute()} replace />;
+
+  async function leaveRecovery() {
+    await signOut();
+    navigate('/login');
+  }
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
@@ -60,6 +70,14 @@ export function AuthLayout() {
                   Sign Up
                 </Link>
               </div>
+            ) : isReset && session ? (
+              <button
+                type="button"
+                onClick={leaveRecovery}
+                className="text-sm font-medium text-brand-600 hover:underline"
+              >
+                ← Back to Login
+              </button>
             ) : (
               <Link to="/login" className="text-sm font-medium text-brand-600 hover:underline">
                 ← Back to Login

@@ -1,7 +1,7 @@
-import { Eye, EyeOff, Loader2, Lock, User } from 'lucide-react';
+import { CheckCircle, Eye, EyeOff, Loader2, Lock, User } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { FcGoogle } from 'react-icons/fc';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AuthField } from '../components/AuthField';
 import { ErrorAlert } from '../components/ErrorAlert';
 import { getErrorMessage, logError } from '../lib/errors';
@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabase';
 
 export function Login() {
   const navigate = useNavigate();
+  const notice = (useLocation().state as { notice?: string } | null)?.notice;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -62,6 +63,16 @@ export function Login() {
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-6">
+        {notice && !error && (
+          <div
+            role="status"
+            className="flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800"
+          >
+            <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+            <span>{notice}</span>
+          </div>
+        )}
+
         <AuthField
           icon={User}
           type="email"
