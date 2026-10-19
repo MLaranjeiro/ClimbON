@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { login, SETTER, uniqueName } from './helpers';
+import { openAdmin, uniqueName } from './helpers';
 
 // Front-end functional tests for the Route Setter admin dashboard (F3).
 // Runs against the real Supabase project, so every route a test creates is deleted
@@ -44,9 +44,7 @@ async function searchClimberList(page: Page, gymName: string, routeName: string)
 
 test.describe('Route Setter admin dashboard (F3)', () => {
   test.beforeEach(async ({ page }) => {
-    await login(page, SETTER);
-    await page.goto('/admin');
-    await expect(page.getByRole('heading', { name: 'Route Setter admin' })).toBeVisible();
+    await openAdmin(page);
   });
 
   test('TC-03: setter creates a route and it appears in the climber active list', async ({ page }) => {

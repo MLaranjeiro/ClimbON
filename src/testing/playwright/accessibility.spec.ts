@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { test, expect, type Page } from '@playwright/test';
-import { login, openFirstGym, SETTER } from './helpers';
+import { login, openAdmin, openFirstGym } from './helpers';
 
 // Accessibility testing for search UI and navigation (N3). Each scan runs axe-core's
 // WCAG 2.1 A + AA rule set, which includes 1.4.3 Contrast (Minimum) and the name/role/
@@ -141,9 +141,7 @@ test.describe('Accessibility — keyboard and non-colour state (N3.2)', () => {
 
 test.describe('Accessibility — route setter admin', () => {
   test('admin dashboard and add-route form', async ({ page }) => {
-    await login(page, SETTER);
-    await page.goto('/admin');
-    await expect(page.getByRole('heading', { name: 'Route Setter admin' })).toBeVisible();
+    await openAdmin(page);
     await expectNoViolations(page);
 
     await page.getByRole('button', { name: 'Add route' }).click();

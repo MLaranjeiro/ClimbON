@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { CLIMBER, login, openFirstGym, SETTER, uniqueName } from './helpers';
+import { CLIMBER, login, openAdmin, openFirstGym, uniqueName } from './helpers';
 
 // Security testing for the deployed front end (N1). Covers XSS (N1.2), SQL injection
 // through the search UI (N1.1), access control on protected routes, and session
@@ -99,8 +99,7 @@ test.describe('Stored XSS through the route form (N1.2)', () => {
     const name = `${uniqueName('PW XSS')} ${XSS_PAYLOAD}`;
     let dialogFired = false;
 
-    await login(page, SETTER);
-    await page.goto('/admin');
+    await openAdmin(page);
     await page.getByRole('button', { name: 'Add route' }).click();
     const form = page.getByRole('dialog', { name: 'Add New Route' });
     await form.getByLabel('Route Name').fill(name);
