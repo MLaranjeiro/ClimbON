@@ -30,8 +30,6 @@ test.describe('Login (F1.2)', () => {
 
     await page.getByRole('button', { name: 'Login' }).click();
 
-    // Native HTML5 "required" validation blocks the request entirely —
-    // still on the login page, no network call ever made.
     await expect(page).toHaveURL('/login');
     const emailValidationMessage = await page.getByPlaceholder('Email').evaluate(
       (el: HTMLInputElement) => el.validationMessage,
