@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Info, ListFilter, Map as MapIcon, Search, Sparkles } from 'lucide-react';
+import { Info, LayoutGrid, List, ListFilter, Map as MapIcon, Search, Sparkles } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Bar, BarChart, Cell, ResponsiveContainer } from 'recharts';
@@ -8,6 +8,7 @@ import { GymMapModal } from '../components/GymMapModal';
 import { InfoModal } from '../components/InfoModal';
 import { RouteDetailModal } from '../components/RouteDetailModal';
 import { RouteFiltersPanel } from '../components/RouteFiltersPanel';
+import { RouteListView } from '../components/RouteListView';
 import { WallDirectoryList } from '../components/WallDirectoryList';
 import { useGymBySlug } from '../hooks/useGymBySlug';
 import { compareGrades, GRADE_ORDER, GRADE_SWATCH_BORDER, getGradeColorHex } from '../lib/grades';
@@ -44,6 +45,7 @@ export function GymOverview() {
   const [selectedGrades, setSelectedGrades] = useState<RouteGrade[]>([]);
   const [selectedSectionIds, setSelectedSectionIds] = useState<(number | 'none')[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [view, setView] = useState<'walls' | 'list'>('walls');
   const filtersRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -156,13 +158,14 @@ export function GymOverview() {
       : []),
   ];
 
-  const totalMatchingClimbs = routeList.filter((r) => {
+  const matchingRoutes = routeList.filter((r) => {
     if (hasWallFilter) {
       const inWall = r.section_id == null ? selectedSectionIds.includes('none') : selectedSectionIds.includes(r.section_id);
       if (!inWall) return false;
     }
     return routeMatchesSearch(r);
-  }).length;
+  });
+  const totalMatchingClimbs = matchingRoutes.length;
 
   function toggleGrade(grade: RouteGrade) {
     setSelectedGrades((prev) => (prev.includes(grade) ? prev.filter((g) => g !== grade) : [...prev, grade]));
@@ -190,6 +193,11 @@ export function GymOverview() {
     if (matches.length === 0) return;
     setSiblingRoutes(matches);
     setSelectedRouteId(matches[0].id);
+  }
+
+  function openFromList(routeId: number, orderedRoutes: { id: number; grade: RouteGrade }[]) {
+    setSiblingRoutes(orderedRoutes);
+    setSelectedRouteId(routeId);
   }
 
   if (gymLoading) {
@@ -274,10 +282,12 @@ export function GymOverview() {
 
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
           <input
+            type="search"
             className="input-field-light pl-9"
             placeholder="Search climbs and walls"
+            aria-label="Search climbs and walls"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -290,12 +300,15 @@ export function GymOverview() {
             type="button"
             onClick={() => setShowFilters((v) => !v)}
             className="btn-secondary-light text-sm flex items-center gap-2"
+            aria-expanded={showFilters}
+            aria-controls="route-filters-panel"
           >
-            <ListFilter className="w-4 h-4" />
+            <ListFilter className="w-4 h-4" aria-hidden="true" />
             Filters
             {activeFilterCount > 0 && (
               <span className="flex items-center justify-center w-4 h-4 rounded-full bg-brand-600 text-white text-[10px] font-semibold">
                 {activeFilterCount}
+                <span className="sr-only"> active</span>
               </span>
             )}
           </button>
@@ -333,9 +346,42 @@ export function GymOverview() {
       </div>
 
       <section>
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Wall directory</h2>
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+            {view === 'walls' ? 'Wall directory' : 'All climbs'}
+          </h2>
+          <div className="flex rounded-lg border border-gray-200 bg-white p-0.5" role="group" aria-label="Layout">
+            {(
+              [
+                { key: 'walls', label: 'Walls', icon: LayoutGrid },
+                { key: 'list', label: 'List', icon: List },
+              ] as const
+            ).map(({ key, label, icon: Icon }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setView(key)}
+                aria-pressed={view === key}
+                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  view === key ? 'bg-gray-900 text-white' : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Icon className="w-4 h-4" aria-hidden="true" />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
         {routesLoading ? (
           <p className="text-gray-500 text-sm">Loading…</p>
+        ) : view === 'list' ? (
+          matchingRoutes.length === 0 ? (
+            <p className="text-gray-500 text-sm">
+              {q ? `No climbs match "${query}".` : 'No climbs match the selected filters.'}
+            </p>
+          ) : (
+            <RouteListView routes={matchingRoutes} sections={sectionList} onSelectRoute={openFromList} />
+          )
         ) : filteredSections.length === 0 && !includeUnsectioned ? (
           <p className="text-gray-500 text-sm">
             {q ? `No climbs or walls match "${query}".` : 'No climbs match the selected filters.'}
