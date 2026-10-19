@@ -1,0 +1,1199 @@
+{
+  "info": {
+    "name": "ClimbON - Routes API & Security (Milestone 2)",
+    "description": "API tests for F3 (Route Management), F4/F7 (browsing and filtering) and N1 (security: RLS, SQL injection, session tokens) against Supabase PostgREST + Auth. TEST_EMAIL must be a route setter or gym admin. Run top to bottom - later requests use variables set by earlier ones, and the last two requests delete everything the run created.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "SUPABASE_URL",
+      "value": "",
+      "description": "e.g. https://xxxxx.supabase.co (from .env.local VITE_SUPABASE_URL)"
+    },
+    {
+      "key": "ANON_KEY",
+      "value": "",
+      "description": "from .env.local VITE_SUPABASE_ANON_KEY"
+    },
+    {
+      "key": "TEST_EMAIL",
+      "value": "",
+      "description": "a route setter / gym admin test account email"
+    },
+    {
+      "key": "TEST_PASSWORD",
+      "value": "",
+      "description": "that test account's password"
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "user_id",
+      "value": ""
+    },
+    {
+      "key": "gym_id",
+      "value": ""
+    },
+    {
+      "key": "other_gym_id",
+      "value": ""
+    },
+    {
+      "key": "route_id",
+      "value": ""
+    },
+    {
+      "key": "cleanup_route_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Login as route setter (get access token)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/auth/v1/token?grant_type=password",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "auth",
+            "v1",
+            "token"
+          ],
+          "query": [
+            {
+              "key": "grant_type",
+              "value": "password"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{TEST_EMAIL}}\",\n  \"password\": \"{{TEST_PASSWORD}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('login succeeds with 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('response contains access_token', () => pm.expect(json.access_token).to.be.a('string'));",
+              "pm.collectionVariables.set('access_token', json.access_token);",
+              "pm.collectionVariables.set('user_id', json.user.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Get my gym roles",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/gym_memberships?user_id=eq.{{user_id}}&select=gym_id,role",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "gym_memberships"
+          ],
+          "query": [
+            {
+              "key": "user_id",
+              "value": "eq.{{user_id}}"
+            },
+            {
+              "key": "select",
+              "value": "gym_id,role"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('account has at least one gym role (route setter or gym admin)', () => pm.expect(json.length).to.be.above(0));",
+              "pm.test('roles are valid values', () => json.forEach((m) => pm.expect(m.role).to.be.oneOf(['route_setter', 'gym_admin'])));",
+              "if (json.length > 0) pm.collectionVariables.set('gym_id', json[0].gym_id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Find a gym this account does not manage",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/gyms?id=neq.{{gym_id}}&select=id&limit=1",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "gyms"
+          ],
+          "query": [
+            {
+              "key": "id",
+              "value": "neq.{{gym_id}}"
+            },
+            {
+              "key": "select",
+              "value": "id"
+            },
+            {
+              "key": "limit",
+              "value": "1"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('other_gym_id', json.length > 0 ? json[0].id : '');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. F4.1 - List active routes for the gym",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/routes?gym_id=eq.{{gym_id}}&status=eq.active&select=id,route_name,grade,status,gym_id,section_id&order=route_name",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "routes"
+          ],
+          "query": [
+            {
+              "key": "gym_id",
+              "value": "eq.{{gym_id}}"
+            },
+            {
+              "key": "status",
+              "value": "eq.active"
+            },
+            {
+              "key": "select",
+              "value": "id,route_name,grade,status,gym_id,section_id"
+            },
+            {
+              "key": "order",
+              "value": "route_name"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('every route is active and belongs to the gym', () => {",
+              "  json.forEach((r) => {",
+              "    pm.expect(r.status).to.eql('active');",
+              "    pm.expect(String(r.gym_id)).to.eql(String(pm.collectionVariables.get('gym_id')));",
+              "  });",
+              "});",
+              "pm.test('routes have the F3.1 fields', () => {",
+              "  json.forEach((r) => ['route_name', 'grade', 'status', 'section_id'].forEach((f) => pm.expect(r).to.have.property(f)));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. F7.1.1 - Filter routes by grade",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/routes?gym_id=eq.{{gym_id}}&grade=eq.V4&select=id,grade",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "routes"
+          ],
+          "query": [
+            {
+              "key": "gym_id",
+              "value": "eq.{{gym_id}}"
+            },
+            {
+              "key": "grade",
+              "value": "eq.V4"
+            },
+            {
+              "key": "select",
+              "value": "id,grade"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('only V4 routes are returned', () => pm.response.json().forEach((r) => pm.expect(r.grade).to.eql('V4')));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. TC-03 / F3.2 - Create a route",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/routes",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "routes"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"route_name\": \"Postman Green Crimps\",\n  \"gym_id\": {{gym_id}},\n  \"grade\": \"V4\",\n  \"status\": \"active\",\n  \"styles\": [],\n  \"created_by\": \"{{user_id}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('route is created (201)', () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "pm.test('created route echoes the submitted data', () => {",
+              "  pm.expect(json[0].route_name).to.eql('Postman Green Crimps');",
+              "  pm.expect(json[0].grade).to.eql('V4');",
+              "  pm.expect(json[0].status).to.eql('active');",
+              "});",
+              "pm.collectionVariables.set('route_id', json[0].id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. F3.3 - Edit the route",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/routes?id=eq.{{route_id}}",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "routes"
+          ],
+          "query": [
+            {
+              "key": "id",
+              "value": "eq.{{route_id}}"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"route_name\": \"Postman Green Crimps (edited)\",\n  \"grade\": \"V5\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('grade and name were updated', () => {",
+              "  pm.expect(json[0].grade).to.eql('V5');",
+              "  pm.expect(json[0].route_name).to.eql('Postman Green Crimps (edited)');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. F3.4 - Deactivate the route",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/routes?id=eq.{{route_id}}",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "routes"
+          ],
+          "query": [
+            {
+              "key": "id",
+              "value": "eq.{{route_id}}"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"inactive\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('route is now inactive', () => pm.expect(pm.response.json()[0].status).to.eql('inactive'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. F3.4 - Inactive route is excluded from the active list",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/routes?id=eq.{{route_id}}&status=eq.active&select=id",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "routes"
+          ],
+          "query": [
+            {
+              "key": "id",
+              "value": "eq.{{route_id}}"
+            },
+            {
+              "key": "status",
+              "value": "eq.active"
+            },
+            {
+              "key": "select",
+              "value": "id"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('route no longer appears in the active list', () => pm.expect(pm.response.json()).to.have.lengthOf(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Validation - invalid grade is rejected",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/routes",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "routes"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"route_name\": \"Postman Invalid Grade\",\n  \"gym_id\": {{gym_id}},\n  \"grade\": \"V99\",\n  \"status\": \"active\",\n  \"styles\": [],\n  \"created_by\": \"{{user_id}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('grade outside V0-V10 is rejected by the database', () => pm.expect(pm.response.code).to.be.oneOf([400, 422]));",
+              "if (pm.response.code === 201) pm.collectionVariables.set('cleanup_route_id', pm.response.json()[0].id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. RLS - setter cannot create a route at another gym",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/routes",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "routes"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"route_name\": \"Postman Cross-Gym Route\",\n  \"gym_id\": {{other_gym_id}},\n  \"grade\": \"V1\",\n  \"status\": \"active\",\n  \"styles\": [],\n  \"created_by\": \"{{user_id}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (!pm.collectionVariables.get('other_gym_id')) {",
+              "  pm.test('skipped - only one gym exists', () => {});",
+              "} else {",
+              "  pm.test('insert for an unmanaged gym is rejected by RLS', () => pm.expect(pm.response.code).to.be.oneOf([401, 403]));",
+              "  if (pm.response.code === 201) pm.collectionVariables.set('cleanup_route_id', pm.response.json()[0].id);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. RLS - anonymous user cannot create routes",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/routes",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "routes"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"route_name\": \"Postman Anon Route\",\n  \"gym_id\": {{gym_id}},\n  \"grade\": \"V1\",\n  \"status\": \"active\",\n  \"styles\": []\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('anonymous insert is rejected', () => pm.expect(pm.response.code).to.be.oneOf([401, 403]));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13. RLS - anonymous user cannot edit routes",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/routes?id=eq.{{route_id}}",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "routes"
+          ],
+          "query": [
+            {
+              "key": "id",
+              "value": "eq.{{route_id}}"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"route_name\": \"hacked\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('request is blocked by RLS (no rows affected) or rejected outright', () => {",
+              "  if (pm.response.code === 200) {",
+              "    pm.expect(pm.response.json()).to.have.lengthOf(0);",
+              "  } else {",
+              "    pm.expect(pm.response.code).to.be.oneOf([401, 403]);",
+              "  }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14. RLS - anonymous user cannot delete routes",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/routes?id=eq.{{route_id}}",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "routes"
+          ],
+          "query": [
+            {
+              "key": "id",
+              "value": "eq.{{route_id}}"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('request is blocked by RLS (no rows affected) or rejected outright', () => {",
+              "  if (pm.response.code === 200) {",
+              "    pm.expect(pm.response.json()).to.have.lengthOf(0);",
+              "  } else {",
+              "    pm.expect(pm.response.code).to.be.oneOf([401, 403]);",
+              "  }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15. Session - tampered JWT is rejected",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}tampered"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/routes?select=id&limit=1",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "routes"
+          ],
+          "query": [
+            {
+              "key": "select",
+              "value": "id"
+            },
+            {
+              "key": "limit",
+              "value": "1"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('modified token signature is rejected with 401', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16. Session - request without an API key is rejected",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/routes?select=id&limit=1",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "routes"
+          ],
+          "query": [
+            {
+              "key": "select",
+              "value": "id"
+            },
+            {
+              "key": "limit",
+              "value": "1"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('missing apikey is rejected with 401', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17. TC-08 - SQL injection in an eq filter",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/routes?route_name=eq.' OR 1=1 --&select=id",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "routes"
+          ],
+          "query": [
+            {
+              "key": "route_name",
+              "value": "eq.' OR 1=1 --"
+            },
+            {
+              "key": "select",
+              "value": "id"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('payload is treated as a literal value, not SQL', () => {",
+              "  if (pm.response.code === 200) {",
+              "    pm.expect(pm.response.json()).to.have.lengthOf(0);",
+              "  } else {",
+              "    pm.expect(pm.response.code).to.be.oneOf([400, 406, 422]);",
+              "  }",
+              "});",
+              "pm.test('no database error details are leaked', () => pm.expect(pm.response.text()).to.not.match(/syntax error at or near/i));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18. TC-08 - SQL injection in a search (ilike) filter",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/routes?route_name=ilike.*'; DROP TABLE routes; --*&select=id",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "routes"
+          ],
+          "query": [
+            {
+              "key": "route_name",
+              "value": "ilike.*'; DROP TABLE routes; --*"
+            },
+            {
+              "key": "select",
+              "value": "id"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('payload is treated as a literal value, not SQL', () => {",
+              "  if (pm.response.code === 200) {",
+              "    pm.expect(pm.response.json()).to.have.lengthOf(0);",
+              "  } else {",
+              "    pm.expect(pm.response.code).to.be.oneOf([400, 406, 422]);",
+              "  }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "19. TC-08 - routes table is still intact",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/routes?select=id&limit=1",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "routes"
+          ],
+          "query": [
+            {
+              "key": "select",
+              "value": "id"
+            },
+            {
+              "key": "limit",
+              "value": "1"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('routes table still responds normally', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "20. Cleanup - delete the test route",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/routes?id=eq.{{route_id}}",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "routes"
+          ],
+          "query": [
+            {
+              "key": "id",
+              "value": "eq.{{route_id}}"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('test route is deleted', () => {",
+              "  pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+              "  if (pm.response.code === 200) pm.expect(pm.response.json()).to.have.lengthOf(1);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "21. Cleanup - delete any route a failed check let through",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/routes?id=eq.{{cleanup_route_id}}",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "routes"
+          ],
+          "query": [
+            {
+              "key": "id",
+              "value": "eq.{{cleanup_route_id}}"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if (!pm.collectionVariables.get('cleanup_route_id')) pm.collectionVariables.set('cleanup_route_id', '-1');"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('cleanup request completed', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
