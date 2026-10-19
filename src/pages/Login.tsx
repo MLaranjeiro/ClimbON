@@ -7,6 +7,7 @@ import { ErrorAlert } from '../components/ErrorAlert';
 import { getErrorMessage, logError } from '../lib/errors';
 import { getHomeRoute } from '../lib/getHomeRoute';
 import { supabase } from '../lib/supabase';
+import { isValidEmail, missingFieldsMessage } from '../lib/validation';
 
 export function Login() {
   const navigate = useNavigate();
@@ -46,6 +47,17 @@ export function Login() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+
+    const missing = missingFieldsMessage({ Email: email, Password: password });
+    if (missing) {
+      setError(missing);
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError('Enter a valid email address.');
+      return;
+    }
+
     setSubmitting(true);
 
     const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
@@ -62,7 +74,7 @@ export function Login() {
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
         {notice && !error && (
           <div
             role="status"

@@ -4,6 +4,7 @@ import { AuthField } from '../components/AuthField';
 import { ErrorAlert } from '../components/ErrorAlert';
 import { getErrorMessage, logError } from '../lib/errors';
 import { supabase } from '../lib/supabase';
+import { isValidEmail, missingFieldsMessage } from '../lib/validation';
 
 export function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -14,6 +15,17 @@ export function ForgotPassword() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+
+    const missing = missingFieldsMessage({ Email: email });
+    if (missing) {
+      setError(missing);
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError('Enter a valid email address.');
+      return;
+    }
+
     setSubmitting(true);
 
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
@@ -42,7 +54,7 @@ export function ForgotPassword() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       <AuthField
         icon={AtSign}
         type="email"

@@ -24,7 +24,7 @@ export function ChooseUsername() {
 
     const trimmed = username.trim();
     if (!trimmed) {
-      setError('Enter a username.');
+      setError('Username is required.');
       return;
     }
 
@@ -56,7 +56,7 @@ export function ChooseUsername() {
           One more step — pick a username other climbers will see.
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
           <AuthField
             icon={User}
             placeholder="Username"

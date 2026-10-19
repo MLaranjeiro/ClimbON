@@ -5,7 +5,7 @@ import { AuthField } from '../components/AuthField';
 import { ErrorAlert } from '../components/ErrorAlert';
 import { getErrorMessage } from '../lib/errors';
 import { supabase } from '../lib/supabase';
-import { validatePassword } from '../lib/validation';
+import { isValidEmail, missingFieldsMessage, validatePassword } from '../lib/validation';
 
 export function Register() {
   const navigate = useNavigate();
@@ -22,6 +22,15 @@ export function Register() {
     e.preventDefault();
     setError(null);
 
+    const missing = missingFieldsMessage({ Username: username, Email: email, Password: password });
+    if (missing) {
+      setError(missing);
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError('Enter a valid email address.');
+      return;
+    }
     if (!passwordCheck.valid) {
       setError(`Password needs: ${passwordCheck.errors.join(', ')}`);
       return;
@@ -60,7 +69,7 @@ export function Register() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       <AuthField
         icon={User}
         placeholder="Username"

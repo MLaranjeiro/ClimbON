@@ -6,7 +6,7 @@ import { ErrorAlert } from '../components/ErrorAlert';
 import { useAuth } from '../context/auth';
 import { getErrorMessage, logError } from '../lib/errors';
 import { supabase } from '../lib/supabase';
-import { validatePassword } from '../lib/validation';
+import { missingFieldsMessage, validatePassword } from '../lib/validation';
 
 export function ResetPassword() {
   const navigate = useNavigate();
@@ -19,7 +19,6 @@ export function ResetPassword() {
   const [updated, setUpdated] = useState(false);
 
   const passwordCheck = validatePassword(password);
-  const mismatch = confirmPassword.length > 0 && confirmPassword !== password;
 
   // Reaching this page without a recovery session means the link expired, was already
   // used, or the page was opened directly.
@@ -41,6 +40,11 @@ export function ResetPassword() {
     e.preventDefault();
     setError(null);
 
+    const missing = missingFieldsMessage({ 'New password': password, 'Password confirmation': confirmPassword });
+    if (missing) {
+      setError(missing);
+      return;
+    }
     if (!passwordCheck.valid) {
       setError(`Password needs: ${passwordCheck.errors.join(', ')}`);
       return;
@@ -90,7 +94,7 @@ export function ResetPassword() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
         <div>
           <AuthField
             icon={Lock}
@@ -111,18 +115,15 @@ export function ResetPassword() {
           )}
         </div>
 
-        <div>
-          <AuthField
-            icon={Lock}
-            type={showPassword ? 'text' : 'password'}
-            placeholder="Confirm new password"
-            autoComplete="new-password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-          />
-          {mismatch && <p className="mt-2 text-xs text-red-600">Passwords do not match.</p>}
-        </div>
+        <AuthField
+          icon={Lock}
+          type={showPassword ? 'text' : 'password'}
+          placeholder="Confirm new password"
+          autoComplete="new-password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          required
+        />
 
         {error && <ErrorAlert message={error} light />}
 
