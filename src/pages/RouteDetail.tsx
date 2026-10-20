@@ -28,13 +28,15 @@ export function RouteDetail() {
           {route.section && <span className="text-sm text-gray-400"> · {route.section.section_name}</span>}
         </div>
 
-        <div className="w-full h-56 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
-          {route.image_url ? (
-            <img src={route.image_url} alt="" className="w-full h-full object-cover" />
-          ) : (
+        {route.image_url ? (
+          <div className="w-full rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
+            <img src={route.image_url} alt="" className="max-w-full max-h-[70vh] w-auto h-auto object-contain" />
+          </div>
+        ) : (
+          <div className="w-full h-56 rounded-xl bg-gray-100 flex items-center justify-center">
             <Mountain className="w-10 h-10 text-gray-300" />
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="flex items-start justify-between gap-4">
           <div>

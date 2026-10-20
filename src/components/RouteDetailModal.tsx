@@ -250,7 +250,7 @@ export function RouteDetailModal({ routeId, siblingRoutes, onClose, onNavigate }
 
                 <div className="relative w-full aspect-[16/9] rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
                   {route.image_url ? (
-                    <img src={route.image_url} alt="" className="w-full h-full object-cover" />
+                    <img src={route.image_url} alt="" className="w-full h-full object-contain" />
                   ) : (
                     <Mountain className="w-10 h-10 text-gray-300" />
                   )}
