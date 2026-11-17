@@ -60,6 +60,9 @@ test.describe('Route Setter admin dashboard (F3)', () => {
     await expect(page.getByRole('button', { name: new RegExp(name) })).toBeVisible();
 
     await page.goto('/admin');
+    // deleteRoute skips rows that aren't there, so wait for the freshly loaded table
+    // first — otherwise cleanup silently does nothing and the route is left behind.
+    await expect(routeRow(page, name)).toBeVisible();
     await deleteRoute(page, name);
   });
 
