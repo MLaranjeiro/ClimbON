@@ -1,0 +1,1306 @@
+{
+  "info": {
+    "name": "ClimbON - Sends & Beta API (Milestone 3)",
+    "description": "API tests for F5 (climb logging and beta sharing), TC-05 (logging a send raises total climbs by 1) and TC-06 (beta text and video are linked to the route and shown on its details page), including media storage in the beta-videos bucket. Runs as a normal climber (TEST_EMAIL), who needs at least one active route they have not sent yet. Run top to bottom - later requests use variables set by earlier ones, and requests 16-22 delete everything the run created.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "SUPABASE_URL",
+      "value": "",
+      "description": "e.g. https://xxxxx.supabase.co (from .env.local VITE_SUPABASE_URL)"
+    },
+    {
+      "key": "ANON_KEY",
+      "value": "",
+      "description": "from .env.local VITE_SUPABASE_ANON_KEY"
+    },
+    {
+      "key": "TEST_EMAIL",
+      "value": "",
+      "description": "a climber test account email"
+    },
+    {
+      "key": "TEST_PASSWORD",
+      "value": "",
+      "description": "that test account's password"
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "user_id",
+      "value": ""
+    },
+    {
+      "key": "today",
+      "value": ""
+    },
+    {
+      "key": "total_before",
+      "value": ""
+    },
+    {
+      "key": "sent_route_ids",
+      "value": ""
+    },
+    {
+      "key": "route_id",
+      "value": ""
+    },
+    {
+      "key": "route_name",
+      "value": ""
+    },
+    {
+      "key": "send_id",
+      "value": ""
+    },
+    {
+      "key": "video_path",
+      "value": ""
+    },
+    {
+      "key": "video_url",
+      "value": ""
+    },
+    {
+      "key": "beta_id",
+      "value": ""
+    },
+    {
+      "key": "stray_sends_ids",
+      "value": ""
+    },
+    {
+      "key": "stray_beta_ids",
+      "value": ""
+    },
+    {
+      "key": "stray_video_paths",
+      "value": ""
+    },
+    {
+      "key": "stray_video_body",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Login as climber (get access token)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/auth/v1/token?grant_type=password",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "auth",
+            "v1",
+            "token"
+          ],
+          "query": [
+            {
+              "key": "grant_type",
+              "value": "password"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{TEST_EMAIL}}\",\n  \"password\": \"{{TEST_PASSWORD}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "['route_id', 'route_name', 'send_id', 'beta_id', 'video_path', 'video_url', 'total_before', 'sent_route_ids', 'stray_sends_ids', 'stray_beta_ids', 'stray_video_paths']",
+              "  .forEach((k) => pm.collectionVariables.set(k, ''));",
+              "pm.collectionVariables.set('today', new Date().toISOString().slice(0, 10));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('login succeeds with 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('response contains access_token', () => pm.expect(json.access_token).to.be.a('string'));",
+              "pm.collectionVariables.set('access_token', json.access_token);",
+              "pm.collectionVariables.set('user_id', json.user.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. TC-05 setup - Total climbs before logging",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/sends?user_id=eq.{{user_id}}&send_type=neq.attempt&select=route_id",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "sends"
+          ],
+          "query": [
+            {
+              "key": "user_id",
+              "value": "eq.{{user_id}}"
+            },
+            {
+              "key": "send_type",
+              "value": "neq.attempt"
+            },
+            {
+              "key": "select",
+              "value": "route_id"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "// Same rule as the profile: attempts don't count and each route counts once.",
+              "const routeIds = [...new Set(pm.response.json().map((s) => s.route_id).filter((id) => id != null))];",
+              "pm.collectionVariables.set('total_before', routeIds.length);",
+              "pm.collectionVariables.set('sent_route_ids', JSON.stringify(routeIds));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. TC-05 setup - Find an active route this climber has not sent",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/routes?status=eq.active&select=id,route_name&order=id&limit=1000",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "routes"
+          ],
+          "query": [
+            {
+              "key": "status",
+              "value": "eq.active"
+            },
+            {
+              "key": "select",
+              "value": "id,route_name"
+            },
+            {
+              "key": "order",
+              "value": "id"
+            },
+            {
+              "key": "limit",
+              "value": "1000"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "const sent = new Set(JSON.parse(pm.collectionVariables.get('sent_route_ids') || '[]'));",
+              "const route = pm.response.json().find((r) => !sent.has(r.id));",
+              "pm.test('found an active route the test climber has not sent yet', () => pm.expect(route, 'every active route is already sent by this account').to.exist);",
+              "if (route) {",
+              "  pm.collectionVariables.set('route_id', route.id);",
+              "  pm.collectionVariables.set('route_name', route.route_name);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. TC-05 / F5.1 - Log a send",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/sends",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "sends"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"route_id\": {{route_id}},\n  \"date_completed\": \"{{today}}\",\n  \"send_type\": \"send\",\n  \"attempts\": 2\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('send is logged (201)', () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "if (json[0]) pm.collectionVariables.set('send_id', json[0].id);",
+              "pm.test('F5.1.1 - log is tied to the route and the user', () => {",
+              "  pm.expect(String(json[0].route_id)).to.eql(String(pm.collectionVariables.get('route_id')));",
+              "  pm.expect(json[0].user_id).to.eql(pm.collectionVariables.get('user_id'));",
+              "});",
+              "pm.test('F5.1.2 - send type and attempts are recorded', () => {",
+              "  pm.expect(json[0].send_type).to.eql('send');",
+              "  pm.expect(json[0].attempts).to.eql(2);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. TC-05 / F2.2.1 - Total climbs increased by 1",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/sends?user_id=eq.{{user_id}}&send_type=neq.attempt&select=route_id",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "sends"
+          ],
+          "query": [
+            {
+              "key": "user_id",
+              "value": "eq.{{user_id}}"
+            },
+            {
+              "key": "send_type",
+              "value": "neq.attempt"
+            },
+            {
+              "key": "select",
+              "value": "route_id"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "const routeIds = new Set(pm.response.json().map((s) => s.route_id).filter((id) => id != null));",
+              "const before = Number(pm.collectionVariables.get('total_before'));",
+              "pm.test('total climbs went from ' + before + ' to ' + (before + 1), () => pm.expect(routeIds.size).to.eql(before + 1));",
+              "pm.test('climbing history now includes the route', () => pm.expect(routeIds.has(Number(pm.collectionVariables.get('route_id')))).to.be.true);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. F5.1.2 - Invalid send type is rejected",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/sends",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "sends"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"route_id\": {{route_id}},\n  \"date_completed\": \"{{today}}\",\n  \"send_type\": \"crushed\",\n  \"attempts\": 1\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('send type outside flash/send/repeat/attempt is rejected', () => pm.expect(pm.response.code).to.be.within(400, 499));",
+              "if (pm.response.code === 201) {",
+              "  const ids = JSON.parse(pm.collectionVariables.get('stray_sends_ids') || '[]');",
+              "  pm.response.json().forEach((r) => ids.push(r.id));",
+              "  pm.collectionVariables.set('stray_sends_ids', JSON.stringify(ids));",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. F5.2.2 - Upload a beta video to storage",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "video/mp4"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/storage/v1/object/beta-videos/{{video_path}}",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "storage",
+            "v1",
+            "object",
+            "beta-videos",
+            "{{video_path}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "ClimbON Postman test clip - not a real video"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "pm.collectionVariables.set('video_path', pm.collectionVariables.get('user_id') + '/postman-' + Date.now() + '.mp4');"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('video upload succeeds (200)', () => pm.response.to.have.status(200));",
+              "pm.test('file is stored under the uploader\\'s folder', () => pm.expect(pm.response.json().Key).to.include(pm.collectionVariables.get('video_path')));",
+              "pm.collectionVariables.set('video_url', pm.variables.get('SUPABASE_URL') +'/storage/v1/object/public/beta-videos/' + pm.collectionVariables.get('video_path'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. F5.2.2 - Uploaded video can be played back from its public URL",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/storage/v1/object/public/beta-videos/{{video_path}}",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "storage",
+            "v1",
+            "object",
+            "public",
+            "beta-videos",
+            "{{video_path}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('public video URL returns 200', () => pm.response.to.have.status(200));",
+              "pm.test('served file is the one that was uploaded', () => pm.expect(pm.response.text()).to.eql(\"ClimbON Postman test clip - not a real video\"));",
+              "pm.test('served with a video content type', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('video/mp4'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. TC-06 / F5.2 - Post beta with text and video",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/beta",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "beta"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"route_id\": {{route_id}},\n  \"user_id\": \"{{user_id}}\",\n  \"description_text\": \"Drop knee on starting hold (Postman test)\",\n  \"video_url\": \"{{video_url}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('beta is created (201)', () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "if (json[0]) pm.collectionVariables.set('beta_id', json[0].id);",
+              "pm.test('F5.2.1 / F5.2.2 - text and video are both stored', () => {",
+              "  pm.expect(json[0].description_text).to.eql(\"Drop knee on starting hold (Postman test)\");",
+              "  pm.expect(json[0].video_url).to.eql(pm.collectionVariables.get('video_url'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. TC-06 / F5.3 - Beta appears on the route details page",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/beta?route_id=eq.{{route_id}}&select=id,route_id,description_text,video_url,created_at,profile:profiles(username,avatar_url)&order=created_at.desc",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "beta"
+          ],
+          "query": [
+            {
+              "key": "route_id",
+              "value": "eq.{{route_id}}"
+            },
+            {
+              "key": "select",
+              "value": "id,route_id,description_text,video_url,created_at,profile:profiles(username,avatar_url)"
+            },
+            {
+              "key": "order",
+              "value": "created_at.desc"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Same query the route details page runs (useRouteDetail).",
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "const beta = pm.response.json().find((b) => String(b.id) === String(pm.collectionVariables.get('beta_id')));",
+              "pm.test('new beta is listed for the route', () => pm.expect(beta).to.exist);",
+              "pm.test('it shows the text, the video and who posted it', () => {",
+              "  pm.expect(beta.description_text).to.eql(\"Drop knee on starting hold (Postman test)\");",
+              "  pm.expect(beta.video_url).to.eql(pm.collectionVariables.get('video_url'));",
+              "  pm.expect(beta.profile).to.be.an('object');",
+              "  pm.expect(beta.profile.username).to.be.a('string');",
+              "});",
+              "pm.test('every beta returned belongs to this route', () => pm.response.json().forEach((b) => pm.expect(String(b.route_id)).to.eql(String(pm.collectionVariables.get('route_id')))));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. F2.2.4 - Beta appears in the climber's uploaded beta on their profile",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/beta?user_id=eq.{{user_id}}&select=id,video_url,route:routes(id,route_name)&order=created_at.desc",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "beta"
+          ],
+          "query": [
+            {
+              "key": "user_id",
+              "value": "eq.{{user_id}}"
+            },
+            {
+              "key": "select",
+              "value": "id,video_url,route:routes(id,route_name)"
+            },
+            {
+              "key": "order",
+              "value": "created_at.desc"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Same query the profile page runs (Dashboard).",
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "const beta = pm.response.json().find((b) => String(b.id) === String(pm.collectionVariables.get('beta_id')));",
+              "pm.test('new beta is listed on the profile', () => pm.expect(beta).to.exist);",
+              "pm.test('it is linked to the correct route', () => {",
+              "  pm.expect(String(beta.route.id)).to.eql(String(pm.collectionVariables.get('route_id')));",
+              "  pm.expect(beta.route.route_name).to.eql(pm.collectionVariables.get('route_name'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. F5.3 - Beta is not attached to any other route",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/beta?id=eq.{{beta_id}}&route_id=neq.{{route_id}}&select=id",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "beta"
+          ],
+          "query": [
+            {
+              "key": "id",
+              "value": "eq.{{beta_id}}"
+            },
+            {
+              "key": "route_id",
+              "value": "neq.{{route_id}}"
+            },
+            {
+              "key": "select",
+              "value": "id"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('beta does not show up under a different route', () => pm.expect(pm.response.json()).to.have.lengthOf(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13. RLS - anonymous user cannot upload videos",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{ANON_KEY}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "video/mp4"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/storage/v1/object/beta-videos/{{user_id}}/postman-anon-{{$timestamp}}.mp4",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "storage",
+            "v1",
+            "object",
+            "beta-videos",
+            "{{user_id}}",
+            "postman-anon-{{$timestamp}}.mp4"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "ClimbON Postman test clip - not a real video"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('anonymous upload is rejected', () => pm.expect(pm.response.code).to.be.within(400, 499));",
+              "if (pm.response.code === 200) {",
+              "  const paths = JSON.parse(pm.collectionVariables.get('stray_video_paths') || '[]');",
+              "  paths.push(pm.response.json().Key.replace(/^beta-videos\\//, ''));",
+              "  pm.collectionVariables.set('stray_video_paths', JSON.stringify(paths));",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14. RLS - anonymous user cannot post beta",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/beta",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "beta"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"route_id\": {{route_id}},\n  \"user_id\": \"{{user_id}}\",\n  \"description_text\": \"Postman anon beta\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('anonymous beta insert is rejected', () => pm.expect(pm.response.code).to.be.oneOf([401, 403]));",
+              "if (pm.response.code === 201) {",
+              "  const ids = JSON.parse(pm.collectionVariables.get('stray_beta_ids') || '[]');",
+              "  pm.response.json().forEach((r) => ids.push(r.id));",
+              "  pm.collectionVariables.set('stray_beta_ids', JSON.stringify(ids));",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15. RLS - anonymous user cannot log sends",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/sends",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "sends"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"route_id\": {{route_id}},\n  \"date_completed\": \"{{today}}\",\n  \"send_type\": \"send\",\n  \"attempts\": 1\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('anonymous send insert is rejected', () => pm.expect(pm.response.code).to.be.oneOf([401, 403]));",
+              "if (pm.response.code === 201) {",
+              "  const ids = JSON.parse(pm.collectionVariables.get('stray_sends_ids') || '[]');",
+              "  pm.response.json().forEach((r) => ids.push(r.id));",
+              "  pm.collectionVariables.set('stray_sends_ids', JSON.stringify(ids));",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16. Cleanup - delete the test beta",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/beta?id=eq.{{beta_id}}",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "beta"
+          ],
+          "query": [
+            {
+              "key": "id",
+              "value": "eq.{{beta_id}}"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('test beta is deleted', () => {",
+              "  pm.expect(pm.response.code).to.eql(200);",
+              "  pm.expect(pm.response.json(), 'no row deleted - the beta table needs a delete policy for the owner').to.have.lengthOf(1);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17. Cleanup - delete the test send",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Prefer",
+            "value": "return=representation"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/sends?id=eq.{{send_id}}",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "sends"
+          ],
+          "query": [
+            {
+              "key": "id",
+              "value": "eq.{{send_id}}"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('test send is deleted', () => {",
+              "  pm.expect(pm.response.code).to.eql(200);",
+              "  pm.expect(pm.response.json(), 'no row deleted - the sends table needs a delete policy for the owner').to.have.lengthOf(1);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18. Cleanup - delete the test video",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/storage/v1/object/beta-videos",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "storage",
+            "v1",
+            "object",
+            "beta-videos"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"prefixes\": [\"{{video_path}}\"]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('delete request succeeds', () => pm.response.to.have.status(200));",
+              "pm.test('the video file was removed', () => pm.expect(pm.response.json(), 'nothing removed - the beta-videos bucket needs a delete policy for the owner').to.have.lengthOf(1));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "19. Cleanup - total climbs is back to where it started",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/sends?user_id=eq.{{user_id}}&send_type=neq.attempt&select=route_id",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "sends"
+          ],
+          "query": [
+            {
+              "key": "user_id",
+              "value": "eq.{{user_id}}"
+            },
+            {
+              "key": "send_type",
+              "value": "neq.attempt"
+            },
+            {
+              "key": "select",
+              "value": "route_id"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "const routeIds = new Set(pm.response.json().map((s) => s.route_id).filter((id) => id != null));",
+              "pm.test('total climbs restored', () => pm.expect(routeIds.size).to.eql(Number(pm.collectionVariables.get('total_before'))));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "20. Cleanup - delete any send a failed check let through",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/sends?id=in.({{stray_sends_ids}})",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "sends"
+          ],
+          "query": [
+            {
+              "key": "id",
+              "value": "in.({{stray_sends_ids}})"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "pm.collectionVariables.set('stray_sends_ids', JSON.parse(pm.collectionVariables.get('stray_sends_ids') || '[]').concat([-1]).join(','));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('cleanup request completed', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "21. Cleanup - delete any beta a failed check let through",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/rest/v1/beta?id=in.({{stray_beta_ids}})",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "rest",
+            "v1",
+            "beta"
+          ],
+          "query": [
+            {
+              "key": "id",
+              "value": "in.({{stray_beta_ids}})"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "pm.collectionVariables.set('stray_beta_ids', JSON.parse(pm.collectionVariables.get('stray_beta_ids') || '[]').concat([-1]).join(','));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('cleanup request completed', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "22. Cleanup - delete any video a failed check let through",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "apikey",
+            "value": "{{ANON_KEY}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{SUPABASE_URL}}/storage/v1/object/beta-videos",
+          "host": [
+            "{{SUPABASE_URL}}"
+          ],
+          "path": [
+            "storage",
+            "v1",
+            "object",
+            "beta-videos"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{{stray_video_body}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "pm.collectionVariables.set('stray_video_body', JSON.stringify({ prefixes: JSON.parse(pm.collectionVariables.get('stray_video_paths') || '[]') }));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('cleanup request completed', () => pm.expect(pm.response.code).to.be.oneOf([200, 400]));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
