@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { GRADE_ORDER, gradeFromRatingValue } from '../lib/grades';
+import { summarizeRatings } from '../lib/ratings';
 import { supabase } from '../lib/supabase';
 import type { RouteGrade, RouteStatus } from '../types';
 
@@ -65,32 +65,7 @@ export function useRouteDetail(routeId: number | null) {
         supabase.from('difficulty_ratings').select('grade, quality').eq('route_id', routeId!),
       ]);
       const sendCount = new Set((sendRows ?? []).map((r) => r.user_id)).size;
-      const avg =
-        ratings && ratings.length > 0 ? ratings.reduce((sum, r) => sum + r.grade, 0) / ratings.length : null;
-
-      const counts = new Map<RouteGrade, number>();
-      for (const r of ratings ?? []) {
-        const g = gradeFromRatingValue(r.grade);
-        counts.set(g, (counts.get(g) ?? 0) + 1);
-      }
-      const ratingDistribution = GRADE_ORDER.filter((g) => counts.has(g)).map((grade) => ({
-        grade,
-        count: counts.get(grade)!,
-      }));
-
-      const qualityValues = (ratings ?? []).map((r) => r.quality).filter((q): q is number => q != null);
-      const avgQuality =
-        qualityValues.length > 0 ? qualityValues.reduce((sum, q) => sum + q, 0) / qualityValues.length : null;
-
-      return {
-        sendCount,
-        avgDifficulty: avg,
-        communityGrade: avg != null ? gradeFromRatingValue(avg) : null,
-        ratingCount: ratings?.length ?? 0,
-        ratingDistribution,
-        avgQuality,
-        qualityCount: qualityValues.length,
-      };
+      return { sendCount, ...summarizeRatings(ratings ?? []) };
     },
   });
 
