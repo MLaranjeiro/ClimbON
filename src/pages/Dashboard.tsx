@@ -16,7 +16,8 @@ import { Link } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Avatar } from '../components/Avatar';
 import { useAuth } from '../context/auth';
-import { GRADE_ORDER, GRADE_SWATCH_BORDER, getGradeColorHex, getHighestGrade } from '../lib/grades';
+import { computeWeeklyStreak, countClimbsPerGrade, getDistinctSends, getWeekStart } from '../lib/climbStats';
+import { GRADE_SWATCH_BORDER, getGradeColorHex, getHighestGrade } from '../lib/grades';
 import { supabase } from '../lib/supabase';
 import type { RouteGrade, SendType } from '../types';
 
@@ -70,28 +71,8 @@ const GRADE_PERIOD_OPTIONS: { value: GradePeriod; label: string }[] = [
   { value: 'all', label: 'All Time' },
 ];
 
-function getWeekStart(date: Date) {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - d.getDay());
-  return d.getTime();
-}
-
 function isThisWeek(dateStr: string) {
   return getWeekStart(new Date(dateStr)) === getWeekStart(new Date());
-}
-
-function computeWeeklyStreak(dates: string[]): number {
-  if (dates.length === 0) return 0;
-  const weeks = new Set(dates.map((d) => getWeekStart(new Date(d))));
-  const weekMs = 7 * 24 * 60 * 60 * 1000;
-  let streak = 0;
-  let cursor = getWeekStart(new Date());
-  while (weeks.has(cursor)) {
-    streak += 1;
-    cursor -= weekMs;
-  }
-  return streak;
 }
 
 function startOfDay(d: Date) {
@@ -130,7 +111,6 @@ export function Dashboard() {
   const { user, profile, gymMemberships, homeGym } = useAuth();
   const [gradePeriod, setGradePeriod] = useState<GradePeriod>('all');
   const [gradePeriodMenuOpen, setGradePeriodMenuOpen] = useState(false);
-
   const { data: sends, isLoading: sendsLoading } = useQuery({
     queryKey: ['sends', user?.id],
     enabled: !!user,
@@ -165,20 +145,10 @@ export function Dashboard() {
   // completion stats or grade milestones — those only count actual sends.
   const completedSends = (sends ?? []).filter((s) => s.send_type !== 'attempt');
 
-  // A route sent multiple times (repeats, warmup laps) should only count once toward
-  // totals and the grade distribution — keep just the first time each route was sent.
-  // Streak stays on the raw list below since re-sending something still counts as
-  // climbing that day.
-  const firstSendByRoute = new Map<number, SendRow>();
-  for (const s of completedSends) {
-    const routeId = s.route?.id;
-    if (routeId == null) continue;
-    const existing = firstSendByRoute.get(routeId);
-    if (!existing || s.date_completed < existing.date_completed) {
-      firstSendByRoute.set(routeId, s);
-    }
-  }
-  const distinctSends = [...firstSendByRoute.values()];
+  // A route sent multiple times only counts once toward totals and the grade
+  // distribution. Streak stays on the raw list below since re-sending something still
+  // counts as climbing that day.
+  const distinctSends = getDistinctSends(completedSends);
 
   const totalClimbs = distinctSends.length;
   const grades = distinctSends.map((s) => s.route?.grade).filter((g): g is RouteGrade => !!g);
@@ -219,14 +189,7 @@ export function Dashboard() {
     return true;
   });
   const chartGrades = periodSends.map((s) => s.route?.grade).filter((g): g is RouteGrade => !!g);
-  const highestChartGrade = getHighestGrade(chartGrades);
-  const highestGradeIndex = highestChartGrade ? GRADE_ORDER.indexOf(highestChartGrade) : -1;
-  const chartMaxIndex =
-    highestGradeIndex >= 0 ? Math.min(highestGradeIndex + 2, GRADE_ORDER.length - 1) : GRADE_ORDER.length - 1;
-  const climbsPerGrade = GRADE_ORDER.slice(0, chartMaxIndex + 1).map((grade) => ({
-    grade,
-    count: chartGrades.filter((g) => g === grade).length,
-  }));
+  const climbsPerGrade = countClimbsPerGrade(chartGrades);
 
   const memberSince = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
