@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type CSSProperties } from 'react';
 import {
   ChevronDown,
@@ -9,15 +9,19 @@ import {
   Plus,
   Sparkles,
   Target,
+  Trash2,
   Trophy,
   Video,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Avatar } from '../components/Avatar';
+import { ErrorAlert } from '../components/ErrorAlert';
 import { useAuth } from '../context/auth';
+import { BETA_VIDEO_BUCKET, betaVideoPathFromUrl } from '../lib/betaVideos';
 import { computeWeeklyStreak, countClimbsPerGrade, getDistinctSends, getWeekStart } from '../lib/climbStats';
 import { GRADE_SWATCH_BORDER, getGradeColorHex, getHighestGrade } from '../lib/grades';
+import { getErrorMessage, logError } from '../lib/errors';
 import { supabase } from '../lib/supabase';
 import type { RouteGrade, SendType } from '../types';
 
@@ -111,6 +115,10 @@ export function Dashboard() {
   const { user, profile, gymMemberships, homeGym } = useAuth();
   const [gradePeriod, setGradePeriod] = useState<GradePeriod>('all');
   const [gradePeriodMenuOpen, setGradePeriodMenuOpen] = useState(false);
+  const [deletingBetaId, setDeletingBetaId] = useState<number | null>(null);
+  const [deleteBetaError, setDeleteBetaError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
   const { data: sends, isLoading: sendsLoading } = useQuery({
     queryKey: ['sends', user?.id],
     enabled: !!user,
@@ -140,6 +148,37 @@ export function Dashboard() {
       return data as unknown as BetaRow[];
     },
   });
+
+  async function deleteBeta(beta: BetaRow) {
+    const what = beta.video_url ? 'this beta and its video' : 'this beta';
+    const where = beta.route?.route_name ? ` on "${beta.route.route_name}"` : '';
+    if (!window.confirm(`Delete ${what}${where}? This can't be undone.`)) return;
+
+    setDeletingBetaId(beta.id);
+    setDeleteBetaError(null);
+
+    // Remove the row first: if the file delete then fails, the worst case is an
+    // unreferenced file in storage rather than a beta post with a dead video link.
+    const { error } = await supabase.from('beta').delete().eq('id', beta.id);
+    if (error) {
+      setDeletingBetaId(null);
+      setDeleteBetaError(getErrorMessage(error, 'Couldn’t delete that beta. Please try again.'));
+      logError('dashboard.beta-delete', error, { betaId: beta.id });
+      return;
+    }
+
+    const videoPath = betaVideoPathFromUrl(beta.video_url);
+    if (videoPath) {
+      const { error: storageError } = await supabase.storage.from(BETA_VIDEO_BUCKET).remove([videoPath]);
+      if (storageError) logError('dashboard.beta-video-delete', storageError, { betaId: beta.id, videoPath });
+    }
+
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['beta', user?.id] }),
+      beta.route ? queryClient.invalidateQueries({ queryKey: ['route-beta', beta.route.id] }) : null,
+    ]);
+    setDeletingBetaId(null);
+  }
 
   // Attempts are logged for session history (Recent activity) but shouldn't inflate
   // completion stats or grade milestones — those only count actual sends.
@@ -383,6 +422,11 @@ export function Dashboard() {
 
           <section className="card-light">
             <h2 className="text-lg font-bold text-gray-900 mb-3">Uploaded beta</h2>
+            {deleteBetaError && (
+              <div className="mb-3">
+                <ErrorAlert message={deleteBetaError} light />
+              </div>
+            )}
             {betasLoading ? (
               <p className="text-gray-500 text-sm">Loading…</p>
             ) : !betas || betas.length === 0 ? (
@@ -401,7 +445,17 @@ export function Dashboard() {
                   <li key={beta.id} className="py-2 text-sm">
                     <div className="flex items-center gap-2 text-gray-900 font-medium">
                       <MessageSquare className="w-4 h-4 text-gray-500" />
-                      {beta.route?.route_name ?? 'Unknown route'}
+                      <span className="min-w-0 flex-1 truncate">{beta.route?.route_name ?? 'Unknown route'}</span>
+                      <button
+                        type="button"
+                        onClick={() => deleteBeta(beta)}
+                        disabled={deletingBetaId === beta.id}
+                        aria-label={`Delete beta for ${beta.route?.route_name ?? 'unknown route'}`}
+                        className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:opacity-50"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                        {deletingBetaId === beta.id ? 'Deleting…' : 'Delete'}
+                      </button>
                     </div>
                     {beta.description_text && (
                       <p className="text-gray-500 mt-1 ml-6">{beta.description_text}</p>
